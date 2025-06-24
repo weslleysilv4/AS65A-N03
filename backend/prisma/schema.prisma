@@ -66,6 +66,8 @@ model News {
 
   newsCategories NewsCategory[]
   media          Media[]
+
+	search_vector Unsupported("tsvector")?
 }
 
 model Media {
