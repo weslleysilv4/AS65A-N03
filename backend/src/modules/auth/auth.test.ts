@@ -1,137 +1,167 @@
-import { Request, Response } from 'express';
-import { registerHandler } from './auth.controller';
-import * as authService from './auth.service';
+import request from 'supertest';
+import app from '../../app';
+import { supabase } from '../../shared/lib/supabase';
+import errorCodes from '../../shared/errors/errorCodes.json';
+import errorMessages from '../../shared/errors/errorMessages.json';
 
-// Helper to create mock Request object
-const mockRequest = (body: any): Partial<Request> => ({ body });
+jest.mock('../../shared/lib/supabase');
 
-// Helper to create mock Response object with chainable methods
-const mockResponse = (): Partial<Response> => {
-  const res: Partial<Response> = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  return res;
-};
+const mockedSupabase = supabase as jest.Mocked<typeof supabase>;
 
-jest.mock('./auth.service');
-
-describe('Auth Controller - registerHandler', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
+describe('Auth Module', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('should return 201 and user data on successful registration', async () => {
-    const userData = { id: '123', email: 'test@example.com' } as any;
-    (authService.registerUser as jest.Mock).mockResolvedValueOnce(userData);
+  describe('POST /api/auth/register', () => {
+    it('should register a new user successfully and return 201', async () => {
+      (mockedSupabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
+        data: {
+          user: { id: 'some-uuid', email: 'test@example.com' } as any,
+          session: {} as any,
+        },
+        error: null,
+      });
 
-    const req = mockRequest({
-      email: 'test@example.com',
-      password: 'password123',
-      name: 'Test User',
+      const response = await request(app).post('/api/auth/register').send({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe(
+        'Usuário cadastrado com sucesso, verifique seu email para ativar sua conta'
+      );
+      expect(response.body.user.user.email).toBe('test@example.com');
     });
-    const res = mockResponse();
 
-    await registerHandler(req as Request, res as Response, jest.fn());
+    it('should return 401 if email is already registered', async () => {
+      (mockedSupabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: {
+          message: 'User already registered',
+          name: 'AuthApiError',
+          status: 400,
+        },
+      });
 
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({
-      message:
-        'Usuário cadastrado com sucesso, verifique seu email para ativar sua conta',
-      user: userData,
+      const response = await request(app).post('/api/auth/register').send({
+        name: 'Test User',
+        email: 'existing@example.com',
+        password: 'password123',
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe(errorMessages.auth.emailAlreadyExists);
+      expect(response.body.errorCode).toBe(errorCodes.auth.emailAlreadyExists);
     });
-  });
 
-  it('should return 409 when email is already registered', async () => {
-    (authService.registerUser as jest.Mock).mockRejectedValueOnce(
-      new Error('Este email já está cadastrado')
-    );
+    it('should return 500 on unexpected error during registration', async () => {
+      (mockedSupabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: {
+          message: 'Unexpected error',
+          name: 'UnknownError',
+          status: 500,
+        },
+      });
 
-    const req = mockRequest({
-      email: 'duplicate@example.com',
-      password: 'password123',
-      name: 'Duplicate User',
+      const response = await request(app).post('/api/auth/register').send({
+        name: 'Test User',
+        email: 'error@example.com',
+        password: 'password123',
+      });
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Erro interno do servidor');
+      expect(response.body.errorCode).toBe(errorCodes.internal);
     });
-    const res = mockResponse();
 
-    await registerHandler(req as Request, res as Response, jest.fn());
+    it('should return 400 for invalid input data', async () => {
+      const response = await request(app).post('/api/auth/register').send({
+        // Missing email and password
+        name: 'Test User',
+      });
 
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Este email já está cadastrado',
-    });
-  });
-
-  it('should return 500 on internal server errors', async () => {
-    (authService.registerUser as jest.Mock).mockRejectedValueOnce(
-      new Error('Unexpected error')
-    );
-
-    const req = mockRequest({
-      email: 'error@example.com',
-      password: 'password123',
-      name: 'Error User',
-    });
-    const res = mockResponse();
-
-    await registerHandler(req as Request, res as Response, jest.fn());
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Erro interno do servidor',
-    });
-  });
-
-  it('should call registerUser with the provided request body', async () => {
-    const body = {
-      email: 'calltest@example.com',
-      password: 'password123',
-      name: 'Call Test',
-    };
-    (authService.registerUser as jest.Mock).mockResolvedValueOnce({ id: '1' });
-
-    const req = mockRequest(body);
-    const res = mockResponse();
-
-    await registerHandler(req as Request, res as Response, jest.fn());
-
-    expect(authService.registerUser).toHaveBeenCalledWith(body);
-  });
-
-  it('should return 201 even if registerUser returns null user data', async () => {
-    (authService.registerUser as jest.Mock).mockResolvedValueOnce(null);
-
-    const req = mockRequest({
-      email: 'nulluser@example.com',
-      password: 'password123',
-      name: 'Null User',
-    });
-    const res = mockResponse();
-
-    await registerHandler(req as Request, res as Response, jest.fn());
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({
-      message:
-        'Usuário cadastrado com sucesso, verifique seu email para ativar sua conta',
-      user: null,
+      expect(response.status).toBe(400);
+      // The actual message and error code will depend on the validation middleware
+      // which uses Zod. We expect some form of validation error.
+      expect(response.body).toHaveProperty('errors');
     });
   });
 
-  it('should return 500 if an error without a message property is thrown', async () => {
-    (authService.registerUser as jest.Mock).mockRejectedValueOnce({});
+  describe('POST /api/auth/login', () => {
+    it('should login a user successfully and return 200', async () => {
+      (
+        mockedSupabase.auth.signInWithPassword as jest.Mock
+      ).mockResolvedValueOnce({
+        data: {
+          user: { id: 'some-uuid', email: 'test@example.com' } as any,
+          session: { access_token: 'some-jwt' } as any,
+        },
+        error: null,
+      });
 
-    const req = mockRequest({
-      email: 'nomessage@example.com',
-      password: 'password123',
-      name: 'No Message',
+      const response = await request(app).post('/api/auth/login').send({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.user.user.email).toBe('test@example.com');
+      expect(response.body.user.session.access_token).toBe('some-jwt');
     });
-    const res = mockResponse();
 
-    await registerHandler(req as Request, res as Response, jest.fn());
+    it('should return 401 for invalid credentials', async () => {
+      (
+        mockedSupabase.auth.signInWithPassword as jest.Mock
+      ).mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: {
+          message: 'Invalid login credentials',
+          name: 'AuthApiError',
+          status: 400,
+        },
+      });
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Erro interno do servidor',
+      const response = await request(app).post('/api/auth/login').send({
+        email: 'wrong@example.com',
+        password: 'wrongpassword',
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe(errorMessages.auth.invalidCredentials);
+      expect(response.body.errorCode).toBe(errorCodes.auth.invalidCredentials);
+    });
+  });
+
+  describe('POST /api/auth/logout', () => {
+    it('should logout a user successfully and return 200', async () => {
+      (mockedSupabase.auth.signOut as jest.Mock).mockResolvedValueOnce({
+        error: null,
+      });
+
+      const response = await request(app).post('/api/auth/logout');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Usuário deslogado com sucesso');
+    });
+
+    it('should return 401 if logout fails', async () => {
+      (mockedSupabase.auth.signOut as jest.Mock).mockResolvedValueOnce({
+        error: {
+          message: 'Logout failed',
+          name: 'AuthApiError',
+          status: 500,
+        },
+      });
+
+      const response = await request(app).post('/api/auth/logout');
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe(errorMessages.auth.logoutFailed);
+      expect(response.body.errorCode).toBe(errorCodes.auth.logoutFailed);
     });
   });
 });
