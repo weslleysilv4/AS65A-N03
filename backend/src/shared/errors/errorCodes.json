@@ -1,0 +1,8 @@
+{
+	"auth": {
+		"emailAlreadyExists": "0001",
+		"invalidCredentials": "0002",
+		"logoutFailed": "0003"
+	},
+	"internal": "9999"
+}

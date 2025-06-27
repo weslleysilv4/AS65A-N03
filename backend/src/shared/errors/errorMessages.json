@@ -1,0 +1,8 @@
+{
+	"auth": {
+		"emailAlreadyExists": "Email já cadastrado",
+		"invalidCredentials": "Credenciais inválidas",
+		"logoutFailed": "Logout falhou"
+	},
+	"internal": "Erro interno do servidor"
+}
