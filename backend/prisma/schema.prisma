@@ -8,6 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Enums
 enum Role {
   ADMIN
   PUBLISHER
@@ -20,6 +21,24 @@ enum NewsStatus {
   ARCHIVED
 }
 
+enum ChangeType {
+  CREATE // Renomeado de CREATED para consistência
+  UPDATE
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  EXTERNAL_LINK
+}
+
+// Models
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -29,8 +48,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  authoredNews News[] @relation("AuthorNews")
-  revisedNews  News[] @relation("RevisorNews")
+  authoredNews    News[]            @relation("AuthorNews")
+  revisedNews     News[]            @relation("RevisorNews")
+  authoredChanges PendingChange[]   @relation("AuthorOfChange")
+  reviewedChanges PendingChange[]   @relation("ReviewerOfChange")
 }
 
 model Category {
@@ -39,7 +60,8 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  newsCategories NewsCategory[]
+  // Relação muitos-para-muitos implícita com News
+  news News[]
 }
 
 model News {
@@ -64,14 +86,38 @@ model News {
   revisorId String?
   revisor   User?   @relation("RevisorNews", fields: [revisorId], references: [id])
 
-  newsCategories NewsCategory[]
-  media          Media[]
+  // Relação muitos-para-muitos implícita com Category
+  categories Category[]
 
-	search_vector Unsupported("tsvector")?
+  media          Media[]
+  pendingChanges PendingChange[]
+
+  search_vector Unsupported("tsvector")?
+}
+
+model PendingChange {
+  id              String    @id @default(cuid())
+  type            ChangeType
+  status          Status    @default(PENDING)
+  content         Json
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  newsId String?
+  news   News?   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  // authorId agora é obrigatório
+  authorId String
+  author   User   @relation("AuthorOfChange", fields: [authorId], references: [id], onDelete: SetNull)
+
+  // onDelete alterado para SetNull para preservar o histórico
+  reviewerId String?
+  reviewer   User?   @relation("ReviewerOfChange", fields: [reviewerId], references: [id], onDelete: SetNull)
 }
 
 model Media {
-  id          String  @id @default(cuid())
+  id          String     @id @default(cuid())
   url         String
   path        String
   alt         String?
@@ -79,29 +125,12 @@ model Media {
   description String?
   caption     String?
   copyright   String?
-
-  type  MediaType
-  order Int
+  type        MediaType
+  order       Int
+  createdAt   DateTime   @default(now())
 
   news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
   newsId String
 
-  createdAt DateTime @default(now())
-
   @@index([newsId])
-}
-
-enum MediaType {
-  IMAGE
-  VIDEO
-  EXTERNAL_LINK
-}
-
-model NewsCategory {
-  id         String @id @default(uuid())
-  newsId     String
-  categoryId String
-
-  news     News     @relation(fields: [newsId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
 }
