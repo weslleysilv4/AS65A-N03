@@ -4,5 +4,9 @@
 		"invalidCredentials": "Credenciais inválidas",
 		"logoutFailed": "Logout falhou"
 	},
+	"notFound": {
+		"pendingChanges": "Nenhuma notícia pendente encontrada",
+		"news": "Nenhuma notícia encontrada"
+	},
 	"internal": "Erro interno do servidor"
 }
