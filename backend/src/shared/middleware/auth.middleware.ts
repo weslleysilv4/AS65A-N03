@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { supabase } from '../lib/supabase';
 
-export const authMiddleware = async (
+export const authMiddleware: RequestHandler = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -9,9 +9,8 @@ export const authMiddleware = async (
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res
-      .status(401)
-      .json({ message: 'Acesso negado: Token não fornecido' });
+    res.status(401).json({ message: 'Acesso negado: Token não fornecido' });
+    return;
   }
 
   const token = authHeader.split(' ')[1];
@@ -21,9 +20,10 @@ export const authMiddleware = async (
   } = await supabase.auth.getUser(token);
 
   if (error || !user) {
-    return res
+    res
       .status(401)
       .json({ message: 'Acesso negado: Token inválido ou expirado' });
+    return;
   }
 
   (req as any).user = user;

@@ -33,7 +33,7 @@ describe('Auth Module', () => {
       expect(response.body.message).toBe(
         'Usuário cadastrado com sucesso, verifique seu email para ativar sua conta'
       );
-      expect(response.body.user.user.email).toBe('test@example.com');
+      expect(response.body.user.email).toBe('test@example.com');
     });
 
     it('should return 401 if email is already registered', async () => {
