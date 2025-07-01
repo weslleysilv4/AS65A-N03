@@ -1,0 +1,1 @@
+// TODO: Criar contexto global quando necessário
