@@ -21,7 +21,7 @@ import * as authService from './auth.service';
  */
 export const registerHandler: RequestHandler = async (req, res, next) => {
   try {
-    const user = await authService.registerUser(req.body);
+    const { user } = await authService.registerUser(req.body);
     res.status(201).json({
       message:
         'Usuário cadastrado com sucesso, verifique seu email para ativar sua conta',

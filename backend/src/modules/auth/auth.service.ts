@@ -41,6 +41,9 @@ export const registerUser = async (input: {
     if (error.message.includes('already registered')) {
       throw new AuthenticationError('emailAlreadyExists');
     }
+    if (error.message.includes('is invalid')) {
+      throw new AuthenticationError('invalidCredentials');
+    }
     throw new InternalServerError(error);
   }
 
@@ -96,4 +99,14 @@ export const logoutUser = async () => {
   }
 
   return true;
+};
+
+export const getUser = async () => {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    throw new InternalServerError(error);
+  }
+
+  return data;
 };
