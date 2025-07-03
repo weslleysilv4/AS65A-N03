@@ -1,21 +1,29 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   getPendingChangesHandler,
   approveChangeHandler,
   rejectChangeHandler,
   getAllNewsHandler,
   updateNewsDirectlyHandler,
+  createUserHandler,
 } from './admin.controller';
-import { authMiddleware } from "../../shared/middleware/auth.middleware";
-import { roleMiddleware } from "../../shared/middleware/roles.middleware";
-import { validate } from "../../shared/middleware/validate.middleware";
-import { 
-  rejectChangeSchema, 
-  updateNewsSchema, 
-  listNewsQuerySchema 
+import { authMiddleware } from '../../shared/middleware/auth.middleware';
+import { roleMiddleware } from '../../shared/middleware/roles.middleware';
+import { validate } from '../../shared/middleware/validate.middleware';
+import {
+  rejectChangeSchema,
+  updateNewsSchema,
+  listNewsQuerySchema,
 } from './admin.schemas';
 
 const router = Router();
+
+router.post(
+  '/users',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  createUserHandler
+);
 
 // Rotas para gerenciamento de mudanças pendentes
 router.get(
