@@ -2,6 +2,7 @@ import { Router } from 'express';
 import categoryRoutes from './modules/categories/categories.router';
 import authRoutes from './modules/auth/auth.router';
 import publisherRoutes from './modules/publisher/publisher.routes';
+import adminRoutes from './modules/admin/admin.routes';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get('/', (req, res) => {
 
 router.use('/categories', categoryRoutes);
 router.use('/publisher', publisherRoutes);
+router.use('/admin', adminRoutes);
 router.use('/auth', authRoutes);
 
 export default router;
