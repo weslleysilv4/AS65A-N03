@@ -37,6 +37,9 @@ export const createNewsSchema = z.object({
       .array(z.string().uuid({ message: 'ID de categoria inválido.' }))
       .min(1, 'Pelo menos uma categoria é necessária.'),
     media: z.array(mediaSchema).optional().default([]),
+    publishedAt: z.coerce.date().optional(),
+    mainPageDisplayDate: z.coerce.date().optional(),
+    newsListPageDate: z.coerce.date().optional(),
   }),
 });
 
