@@ -167,3 +167,62 @@ export const getAllNewsHandler: RequestHandler = async (
     next(error);
   }
 };
+
+/**
+ * Handles the request to update a news article directly by an admin (hotfix).
+ *
+ * @param {RequestHandler} req - Express request object containing the news ID, update data, and user information
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next function for error handling
+ * @returns {Promise<void>} Returns a JSON response with the updated news article
+ *
+ * @throws {500} When an internal server error occurs
+ *
+ * Expected request body:
+ * - title: string (optional, updated title)
+ * - text: string (optional, updated text)
+ * - tagsKeywords: string[] (optional, updated tags)
+ * - expirationDate: string (optional, updated expiration date)
+ * - categoryIds: string[] (optional, updated category IDs)
+ * - status: string (optional, updated status)
+ * - published: boolean (optional, updated published status)
+ * - publishedAt: string (optional, updated published date)
+ * - mainPageDisplayDate: string (optional, updated main page display date)
+ * - newsListPageDate: string (optional, updated news list page date)
+ *
+ * Success response (200):
+ * - message: string (success message)
+ * - data: object (updated news article)
+ *
+ * @example
+ * ```typescript
+ * const updatedNews = await updateNewsDirectlyHandler(req, res, next);
+ * ```
+ */
+export const updateNewsDirectlyHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const { id: newsId } = req.params;
+  const newsData = req.body;
+  const user = req.user;
+
+  if (!user.email) {
+    return next(new Error('Email do usuário não encontrado'));
+  }
+
+  try {
+    const updatedNews = await adminService.updateNewsDirectly(
+      newsId,
+      newsData,
+      user.email
+    );
+    res.status(200).json({
+      message: 'Notícia atualizada com sucesso',
+      data: updatedNews,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

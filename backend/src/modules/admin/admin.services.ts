@@ -342,3 +342,121 @@ export const getAllNews = async (filters?: {
     },
   };
 };
+
+/**
+ * Updates a news article directly by an admin (hotfix).
+ *
+ * @param {string} newsId - The ID of the news article to update
+ * @param {Object} newsData - The updated news data
+ * @param {string} adminEmail - The email of the admin making the update
+ * @returns {Promise<Object>} Returns the updated news article
+ * @throws {NotFoundError} Throws an error if the news article is not found
+ * @throws {InternalServerError} Throws an error if the update process fails
+ *
+ * @example
+ * ```typescript
+ * const updatedNews = await updateNewsDirectly('news-123', { title: 'New Title' }, 'admin@example.com');
+ * ```
+ */
+export const updateNewsDirectly = async (
+  newsId: string,
+  newsData: any,
+  adminEmail: string
+) => {
+  const existingNews = await prisma.news.findUnique({
+    where: { id: newsId },
+  });
+
+  if (!existingNews) {
+    throw new NotFoundError('news');
+  }
+
+  // Find the admin user by email
+  const admin = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+
+  if (!admin) {
+    throw new InternalServerError(
+      new Error(),
+      'Usuário administrador não encontrado no sistema'
+    );
+  }
+
+  try {
+    const updateData: Prisma.NewsUpdateInput = {
+      title: newsData.title,
+      text: newsData.text,
+      tagsKeywords: newsData.tagsKeywords,
+      expirationDate: newsData.expirationDate ? new Date(newsData.expirationDate) : null,
+      status: newsData.status,
+      published: newsData.published,
+      publishedAt: newsData.publishedAt ? new Date(newsData.publishedAt) : null,
+      mainPageDisplayDate: newsData.mainPageDisplayDate ? new Date(newsData.mainPageDisplayDate) : null,
+      newsListPageDate: newsData.newsListPageDate ? new Date(newsData.newsListPageDate) : null,
+      revisor: {
+        connect: { id: admin.id },
+      },
+      revisionDate: new Date(),
+    };
+
+    // Handle categories update if provided
+    if (newsData.categoryIds && newsData.categoryIds.length > 0) {
+      // Validate categories exist before connecting
+      const existingCategories = await prisma.category.findMany({
+        where: { id: { in: newsData.categoryIds } },
+      });
+      
+      if (existingCategories.length !== newsData.categoryIds.length) {
+        throw new InternalServerError(
+          new Error(),
+          'Uma ou mais categorias não foram encontradas'
+        );
+      }
+
+      updateData.categories = {
+        set: [],
+        connect: newsData.categoryIds.map((id: string) => ({ id })),
+      };
+    }
+
+    const updatedNews = await prisma.news.update({
+      where: { id: newsId },
+      data: updateData,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        revisor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        categories: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        media: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+    });
+
+    return updatedNews;
+  } catch (error) {
+    throw new InternalServerError(
+      error as Error,
+      'Falha ao atualizar a notícia'
+    );
+  }
+};

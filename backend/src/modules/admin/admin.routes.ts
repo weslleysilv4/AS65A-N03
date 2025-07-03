@@ -4,12 +4,14 @@ import {
   approveChangeHandler,
   rejectChangeHandler,
   getAllNewsHandler,
+  updateNewsDirectlyHandler,
 } from './admin.controller';
 import { authMiddleware } from "../../shared/middleware/auth.middleware";
 import { roleMiddleware } from "../../shared/middleware/roles.middleware";
 import { validate } from "../../shared/middleware/validate.middleware";
 import { 
   rejectChangeSchema, 
+  updateNewsSchema, 
   listNewsQuerySchema 
 } from './admin.schemas';
 
@@ -45,6 +47,14 @@ router.get(
   roleMiddleware(['ADMIN']),
   validate(listNewsQuerySchema),
   getAllNewsHandler
+);
+
+router.put(
+  '/news/:id',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  validate(updateNewsSchema),
+  updateNewsDirectlyHandler
 );
 
 export default router;
