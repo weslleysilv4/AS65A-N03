@@ -259,3 +259,86 @@ export const rejectChange = async (
     );
   }
 };
+
+/**
+ * Retrieves all news articles in the system with optional filtering.
+ *
+ * @param {Object} filters - Optional filters for the news list
+ * @param {string} filters.status - Filter by news status
+ * @param {number} filters.page - Page number for pagination
+ * @param {number} filters.limit - Number of items per page
+ * @returns {Promise<Object>} Returns the list of news articles with pagination
+ * @throws {NotFoundError} Throws an error if no news articles are found
+ *
+ * @example
+ * ```typescript
+ * const news = await getAllNews({ status: 'PENDING', page: 1, limit: 10 });
+ * ```
+ */
+export const getAllNews = async (filters?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const page = filters?.page || 1;
+  const limit = filters?.limit || 10;
+  const skip = (page - 1) * limit;
+
+  const whereClause: Prisma.NewsWhereInput = {};
+  if (filters?.status) {
+    whereClause.status = filters.status as any;
+  }
+
+  const [news, total] = await Promise.all([
+    prisma.news.findMany({
+      where: whereClause,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        revisor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        categories: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        media: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.news.count({ where: whereClause }),
+  ]);
+
+  if (!news || news.length === 0) {
+    throw new NotFoundError('news');
+  }
+
+  return {
+    news,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};

@@ -119,3 +119,51 @@ export const rejectChangeHandler: RequestHandler = async (
     next(error);
   }
 };
+
+/**
+ * Handles the request to get all news articles with optional filtering.
+ *
+ * @param {RequestHandler} req - Express request object containing query parameters
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next function for error handling
+ * @returns {Promise<void>} Returns a JSON response with the news articles and pagination
+ *
+ * @throws {500} When an internal server error occurs
+ *
+ * Expected query parameters:
+ * - status: string (optional, filter by news status)
+ * - page: string (optional, page number for pagination)
+ * - limit: string (optional, number of items per page)
+ *
+ * Success response (200):
+ * - message: string (success message)
+ * - data: object (news articles and pagination info)
+ *
+ * @example
+ * ```typescript
+ * const news = await getAllNewsHandler(req, res, next);
+ * ```
+ */
+export const getAllNewsHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const { status, page, limit } = req.query;
+
+  try {
+    const filters = {
+      status: status as string,
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    };
+
+    const result = await adminService.getAllNews(filters);
+    res.status(200).json({
+      message: 'Notícias recuperadas com sucesso',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

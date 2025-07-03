@@ -3,12 +3,14 @@ import {
   getPendingChangesHandler,
   approveChangeHandler,
   rejectChangeHandler,
+  getAllNewsHandler,
 } from './admin.controller';
 import { authMiddleware } from "../../shared/middleware/auth.middleware";
 import { roleMiddleware } from "../../shared/middleware/roles.middleware";
 import { validate } from "../../shared/middleware/validate.middleware";
 import { 
   rejectChangeSchema, 
+  listNewsQuerySchema 
 } from './admin.schemas';
 
 const router = Router();
@@ -34,6 +36,15 @@ router.post(
   roleMiddleware(['ADMIN']),
   validate(rejectChangeSchema),
   rejectChangeHandler
+);
+
+// Rotas para gerenciamento de notícias
+router.get(
+  '/news',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  validate(listNewsQuerySchema),
+  getAllNewsHandler
 );
 
 export default router;
