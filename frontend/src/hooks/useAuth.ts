@@ -19,13 +19,13 @@ export const useLogin = () => {
     mutationFn: login,
     onSuccess: (data) => {
       const token = data.user.session.access_token;
+      
       if (token) {
-        localStorage.setItem("token", token);
+        document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        window.dispatchEvent(new CustomEvent('auth-login'));
+        queryClient.invalidateQueries();
+        router.push("/dashboard");
       }
-
-      queryClient.invalidateQueries();
-
-      router.push("/dashboard");
     },
     onError: (error) => {
       showError(error);
@@ -56,12 +56,10 @@ export const useLogout = () => {
   return useMutation<void, Error, void>({
     mutationFn: logout,
     onSuccess: () => {
-      localStorage.removeItem("token");
-
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      window.dispatchEvent(new CustomEvent('auth-logout'));
       queryClient.invalidateQueries({ queryKey: ["auth"] });
-
       queryClient.clear();
-
       router.push("/login");
     },
     onError: (error) => {
@@ -79,7 +77,11 @@ export const useAuthStatus = () => {
     setIsClient(true);
 
     const checkAuth = () => {
-      const token = localStorage.getItem("token");
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+      
       setIsAuthenticated(!!token);
       setIsLoading(false);
     };
@@ -90,15 +92,21 @@ export const useAuthStatus = () => {
       checkAuth();
     };
 
+    const handleAuthLogin = () => {
+      checkAuth();
+    };
+
     const handleAuthLogout = () => {
       setIsAuthenticated(false);
     };
 
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("auth-login", handleAuthLogin);
     window.addEventListener("auth-logout", handleAuthLogout);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-login", handleAuthLogin);
       window.removeEventListener("auth-logout", handleAuthLogout);
     };
   }, []);
@@ -133,7 +141,11 @@ export const useAuth = () => {
     queryFn: () => {
       if (typeof window === "undefined") return null;
 
-      const token = localStorage.getItem("token");
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+
       return {
         isAuthenticated: !!token,
         token,
