@@ -193,3 +193,69 @@ export const approveChange = async (changeId: string, reviewerEmail: string) => 
     );
   }
 };
+
+/**
+ * Rejects a specific pending change with a reason.
+ *
+ * @param {string} changeId - The ID of the pending change to reject
+ * @param {string} reviewerEmail - The email of the admin reviewing the change
+ * @param {string} rejectionReason - The reason for rejection
+ * @returns {Promise<Object>} Returns the updated pending change record
+ * @throws {NotFoundError} Throws an error if the pending change is not found
+ * @throws {InternalServerError} Throws an error if the rejection process fails
+ *
+ * @example
+ * ```typescript
+ * const rejectedChange = await rejectChange('change-123', 'admin@example.com', 'Conteúdo inadequado');
+ * ```
+ */
+export const rejectChange = async (
+  changeId: string,
+  reviewerEmail: string,
+  rejectionReason: string
+) => {
+  const pendingChange = await prisma.pendingChange.findUnique({
+    where: { id: changeId },
+  });
+
+  if (!pendingChange) {
+    throw new NotFoundError('pendingChanges');
+  }
+
+  if (pendingChange.status !== 'PENDING') {
+    throw new InternalServerError(
+      new Error(),
+      'Apenas mudanças pendentes podem ser rejeitadas'
+    );
+  }
+
+  const reviewer = await prisma.user.findUnique({
+    where: { email: reviewerEmail },
+  });
+
+  if (!reviewer) {
+    throw new InternalServerError(
+      new Error(),
+      'Usuário revisor não encontrado no sistema'
+    );
+  }
+
+  try {
+    const rejectedChange = await prisma.pendingChange.update({
+      where: { id: changeId },
+      data: {
+        status: 'REJECTED',
+        rejectionReason,
+        reviewerId: reviewer.id,
+        updatedAt: new Date(),
+      },
+    });
+
+    return rejectedChange;
+  } catch (error) {
+    throw new InternalServerError(
+      error as Error,
+      'Falha ao rejeitar a mudança'
+    );
+  }
+};

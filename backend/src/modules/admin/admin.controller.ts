@@ -69,3 +69,53 @@ export const approveChangeHandler: RequestHandler = async (
     next(error);
   }
 };
+
+/**
+ * Handles the request to reject a specific pending change.
+ *
+ * @param {RequestHandler} req - Express request object containing the change ID, rejection reason, and user information
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next function for error handling
+ * @returns {Promise<void>} Returns a JSON response with the rejection status
+ *
+ * @throws {500} When an internal server error occurs
+ *
+ * Expected request body:
+ * - rejectionReason: string (reason for rejection)
+ *
+ * Success response (200):
+ * - message: string (success message)
+ * - data: object (rejected change record)
+ *
+ * @example
+ * ```typescript
+ * const rejectedChange = await rejectChangeHandler(req, res, next);
+ * ```
+ */
+export const rejectChangeHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const { id: changeId } = req.params;
+  const { rejectionReason } = req.body;
+  const user = req.user;
+
+  if (!user.email) {
+    return next(new Error('Email do usuário não encontrado'));
+  }
+
+  try {
+    const rejectedChange = await adminService.rejectChange(
+      changeId,
+      user.email,
+      rejectionReason
+    );
+    res.status(200).json({
+      message: 'Mudança rejeitada com sucesso',
+      data: rejectedChange,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
