@@ -3,6 +3,7 @@ import { useLogin } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { User } from "lucide-react";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -24,6 +25,20 @@ export default function LoginForm({
 
     loginUser(
       { email, password },
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+      }
+    );
+  };
+
+  const handleAdminLogin = () => {
+    loginUser(
+      {
+        email: "admin@email.com",
+        password: "admin12345678",
+      },
       {
         onSuccess: () => {
           onSuccess?.();
@@ -146,6 +161,24 @@ export default function LoginForm({
             </div>
           </div>
         </form>
+
+        {/* Admin Login Button */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="text-center mb-4">
+            <p className="text-sm text-gray-600">Para desenvolvimento:</p>
+          </div>
+          <Button
+            type="button"
+            onClick={handleAdminLogin}
+            disabled={isPending}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2.5 px-4 rounded-lg font-bold text-sm md:text-base transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <User size={20} />
+            {isPending
+              ? "Entrando como Admin..."
+              : "Login Admin (Desenvolvimento)"}
+          </Button>
+        </div>
       </div>
     </div>
   );

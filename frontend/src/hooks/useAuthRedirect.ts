@@ -8,21 +8,39 @@ export function useAuthRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    // Only run on client side after hydration
     if (!isClient) return;
-
-    // If still loading, wait
     if (isLoading) return;
 
-    // If authenticated, redirect to dashboard
     if (isAuthenticated) {
       router.push("/dashboard");
       return;
     }
 
-    // If not authenticated and not loading, we're ready to show login
     setIsReady(true);
   }, [isClient, isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleAuthLogin = () => {
+      setTimeout(() => {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+
+        if (token) {
+          router.push("/dashboard");
+        }
+      }, 200);
+    };
+
+    window.addEventListener("auth-login", handleAuthLogin);
+
+    return () => {
+      window.removeEventListener("auth-login", handleAuthLogin);
+    };
+  }, [isClient, router]);
 
   return {
     isReady,
