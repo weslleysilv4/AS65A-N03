@@ -31,3 +31,41 @@ export const getPendingChangesHandler: RequestHandler = async (
     next(error);
   }
 };
+
+/**
+ * Handles the request to approve a specific pending change.
+ *
+ * @param {RequestHandler} req - Express request object containing the change ID and user information
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next function for error handling
+ * @returns {Promise<void>} Returns a JSON response with the approval status
+ *
+ * @throws {500} When an internal server error occurs
+ *
+ * @example
+ * ```typescript
+ * const approvedChange = await approveChangeHandler(req, res, next);
+ * ```
+ */
+export const approveChangeHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const { id: changeId } = req.params;
+  const user = req.user;
+
+  if (!user.email) {
+    return next(new Error('Email do usuário não encontrado'));
+  }
+
+  try {
+    const approvedChange = await adminService.approveChange(changeId, user.email);
+    res.status(200).json({
+      message: 'Mudança aprovada com sucesso',
+      data: approvedChange,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

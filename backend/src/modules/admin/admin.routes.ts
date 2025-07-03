@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getPendingChangesHandler,
+  approveChangeHandler,
 } from './admin.controller';
 import { authMiddleware } from "../../shared/middleware/auth.middleware";
 import { roleMiddleware } from "../../shared/middleware/roles.middleware";
@@ -14,3 +15,12 @@ router.get(
   roleMiddleware(['ADMIN']),
   getPendingChangesHandler
 );
+
+router.post(
+  '/changes/:id/approve',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  approveChangeHandler
+);
+
+export default router;
