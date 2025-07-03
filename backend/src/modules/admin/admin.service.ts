@@ -1,7 +1,40 @@
-import { Prisma } from "@prisma/client";
-import prisma from "../../shared/lib/prisma";
-import { InternalServerError } from "../../shared/errors/InternalServerError";
-import { NotFoundError } from "../../shared/errors/NotFoundError";
+import { Prisma, User } from '@prisma/client';
+import prisma from '../../shared/lib/prisma';
+import { InternalServerError } from '../../shared/errors/InternalServerError';
+import { NotFoundError } from '../../shared/errors/NotFoundError';
+import { supabase } from '../../shared/lib/supabase';
+
+/**
+ * Creates a new user in the system.
+ *
+ * @param {User & { password: string }} input - The user data to create
+ * @returns {Promise<User>} Returns the created user
+ * @throws {InternalServerError} Throws an error if the user creation fails
+ *
+ * @example
+ * ```typescript
+ * const newUser = await createNewUser({ email: 'user@example.com', password: 'password', name: 'John Doe', role: 'ADMIN' });
+ * ```
+ */
+export const createNewUser = async (
+  input: Partial<User> & { password: string }
+) => {
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: {
+      name: input.name,
+      role: input.role,
+    },
+  });
+
+  if (error) {
+    throw new InternalServerError(error, 'Erro ao criar usuário');
+  }
+
+  return data.user;
+};
 
 /**
  * Retrieves all pending changes in the system for admin review.
@@ -61,7 +94,10 @@ export const getPendingChanges = async () => {
  * const approvedChange = await approveChange('change-123', 'admin@example.com');
  * ```
  */
-export const approveChange = async (changeId: string, reviewerEmail: string) => {
+export const approveChange = async (
+  changeId: string,
+  reviewerEmail: string
+) => {
   const pendingChange = await prisma.pendingChange.findUnique({
     where: { id: changeId },
     include: {
@@ -110,37 +146,45 @@ export const approveChange = async (changeId: string, reviewerEmail: string) => 
         const existingCategories = await prisma.category.findMany({
           where: { id: { in: newsData.categoryIds } },
         });
-        validCategoryIds = existingCategories.map(cat => cat.id);
+        validCategoryIds = existingCategories.map((cat) => cat.id);
       }
-      
+
       const newNews = await prisma.news.create({
         data: {
           title: newsData.title,
           text: newsData.text,
           tagsKeywords: newsData.tagsKeywords || [],
-          expirationDate: newsData.expirationDate ? new Date(newsData.expirationDate) : null,
+          expirationDate: newsData.expirationDate
+            ? new Date(newsData.expirationDate)
+            : null,
           status: 'APPROVED',
           published: true,
           publishedAt: new Date(),
           authorId: pendingChange.authorId,
           revisorId: reviewer.id,
           revisionDate: new Date(),
-          categories: validCategoryIds.length > 0 ? {
-            connect: validCategoryIds.map((id: string) => ({ id })),
-          } : undefined,
-          media: newsData.media && newsData.media.length > 0 ? {
-            create: newsData.media.map((media: any) => ({
-              url: media.url,
-              path: media.path,
-              alt: media.alt,
-              title: media.title,
-              description: media.description,
-              caption: media.caption,
-              copyright: media.copyright,
-              type: media.type,
-              order: media.order,
-            })),
-          } : undefined,
+          categories:
+            validCategoryIds.length > 0
+              ? {
+                  connect: validCategoryIds.map((id: string) => ({ id })),
+                }
+              : undefined,
+          media:
+            newsData.media && newsData.media.length > 0
+              ? {
+                  create: newsData.media.map((media: any) => ({
+                    url: media.url,
+                    path: media.path,
+                    alt: media.alt,
+                    title: media.title,
+                    description: media.description,
+                    caption: media.caption,
+                    copyright: media.copyright,
+                    type: media.type,
+                    order: media.order,
+                  })),
+                }
+              : undefined,
         },
       });
 
@@ -152,33 +196,45 @@ export const approveChange = async (changeId: string, reviewerEmail: string) => 
       return { ...updatedChange, createdNews: newNews };
     } else if (pendingChange.type === 'UPDATE') {
       const newsData = pendingChange.content as any;
-      
+
       let validCategoryIds: string[] = [];
       if (newsData.categoryIds && newsData.categoryIds.length > 0) {
         const existingCategories = await prisma.category.findMany({
           where: { id: { in: newsData.categoryIds } },
         });
-        validCategoryIds = existingCategories.map(cat => cat.id);
+        validCategoryIds = existingCategories.map((cat) => cat.id);
       }
-      
+
       const updatedNews = await prisma.news.update({
         where: { id: pendingChange.newsId! },
         data: {
           title: newsData.title,
           text: newsData.text,
           tagsKeywords: newsData.tagsKeywords,
-          expirationDate: newsData.expirationDate ? new Date(newsData.expirationDate) : null,
+          expirationDate: newsData.expirationDate
+            ? new Date(newsData.expirationDate)
+            : null,
           status: 'APPROVED',
           revisorId: reviewer.id,
           revisionDate: new Date(),
-          published: newsData.published !== undefined ? newsData.published : true,
-          publishedAt: newsData.publishedAt ? new Date(newsData.publishedAt) : new Date(),
-          mainPageDisplayDate: newsData.mainPageDisplayDate ? new Date(newsData.mainPageDisplayDate) : null,
-          newsListPageDate: newsData.newsListPageDate ? new Date(newsData.newsListPageDate) : null,
-          categories: validCategoryIds.length > 0 ? {
-            set: [],
-            connect: validCategoryIds.map((id: string) => ({ id })),
-          } : undefined,
+          published:
+            newsData.published !== undefined ? newsData.published : true,
+          publishedAt: newsData.publishedAt
+            ? new Date(newsData.publishedAt)
+            : new Date(),
+          mainPageDisplayDate: newsData.mainPageDisplayDate
+            ? new Date(newsData.mainPageDisplayDate)
+            : null,
+          newsListPageDate: newsData.newsListPageDate
+            ? new Date(newsData.newsListPageDate)
+            : null,
+          categories:
+            validCategoryIds.length > 0
+              ? {
+                  set: [],
+                  connect: validCategoryIds.map((id: string) => ({ id })),
+                }
+              : undefined,
         },
       });
 
@@ -187,10 +243,7 @@ export const approveChange = async (changeId: string, reviewerEmail: string) => 
 
     return updatedChange;
   } catch (error) {
-    throw new InternalServerError(
-      error as Error,
-      'Falha ao aprovar a mudança'
-    );
+    throw new InternalServerError(error as Error, 'Falha ao aprovar a mudança');
   }
 };
 
@@ -388,12 +441,18 @@ export const updateNewsDirectly = async (
       title: newsData.title,
       text: newsData.text,
       tagsKeywords: newsData.tagsKeywords,
-      expirationDate: newsData.expirationDate ? new Date(newsData.expirationDate) : null,
+      expirationDate: newsData.expirationDate
+        ? new Date(newsData.expirationDate)
+        : null,
       status: newsData.status,
       published: newsData.published,
       publishedAt: newsData.publishedAt ? new Date(newsData.publishedAt) : null,
-      mainPageDisplayDate: newsData.mainPageDisplayDate ? new Date(newsData.mainPageDisplayDate) : null,
-      newsListPageDate: newsData.newsListPageDate ? new Date(newsData.newsListPageDate) : null,
+      mainPageDisplayDate: newsData.mainPageDisplayDate
+        ? new Date(newsData.mainPageDisplayDate)
+        : null,
+      newsListPageDate: newsData.newsListPageDate
+        ? new Date(newsData.newsListPageDate)
+        : null,
       revisor: {
         connect: { id: admin.id },
       },
@@ -406,7 +465,7 @@ export const updateNewsDirectly = async (
       const existingCategories = await prisma.category.findMany({
         where: { id: { in: newsData.categoryIds } },
       });
-      
+
       if (existingCategories.length !== newsData.categoryIds.length) {
         throw new InternalServerError(
           new Error(),

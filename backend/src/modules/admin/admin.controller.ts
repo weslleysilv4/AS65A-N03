@@ -1,5 +1,19 @@
-import * as adminService from './admin.services';
+import { User } from '@prisma/client';
+import * as adminService from './admin.service';
 import { RequestHandler } from 'express';
+
+export const createUserHandler: RequestHandler = async (req, res, next) => {
+	const { email, password, name, role } = req.body as User & { password: string };
+	try {
+		const newUser = await adminService.createNewUser({ email, password, name, role});
+		res.status(201).json({
+			message: 'Usuário criado com sucesso!',
+			data: newUser,
+		});
+	} catch (error) {
+		next(error);
+	}
+};
 
 /**
  * Handles the request to get all pending changes for admin review.
