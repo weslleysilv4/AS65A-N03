@@ -5,9 +5,10 @@ export const roleMiddleware = (allowedRoles: string[]) => {
     const userRole = (req as any).user?.user_metadata?.role;
 
     if (!userRole || !allowedRoles.includes(userRole)) {
-      return res
+      res
         .status(403)
         .json({ message: 'Acesso negado: Permissão insuficiente' });
+      return;
     }
 
     next();
