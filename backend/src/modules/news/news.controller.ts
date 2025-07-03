@@ -14,10 +14,11 @@ import * as newsService from './news.service';
  */
 export const getPublishedNewsHandler: RequestHandler = async (req, res, next) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const result = await newsService.getPublishedNews({
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 10,
+      search: search as string,
     });
     res.status(200).json({
       message: 'Notícias publicadas encontradas com sucesso',

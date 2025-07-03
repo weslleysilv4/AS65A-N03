@@ -7,6 +7,7 @@ import { NotFoundError } from '../../shared/errors/NotFoundError';
  * @param {Object} filters - Filtros opcionais de paginação
  * @param {number} [filters.page=1] - Página atual
  * @param {number} [filters.limit=10] - Limite de itens por página
+ * @param {string} [filters.search] - Termo de busca
  * @returns {Promise<Object>} Lista de notícias e paginação
  * @throws {NotFoundError} Se não houver notícias publicadas
  *
@@ -16,18 +17,29 @@ import { NotFoundError } from '../../shared/errors/NotFoundError';
 export const getPublishedNews = async (
   filters?: {
     page?: number;
-    limit?: number
-  }) => {
+    limit?: number;
+    search?: string;
+  }
+) => {
   const page = filters?.page || 1;
   const limit = filters?.limit || 10;
   const skip = (page - 1) * limit;
 
+  const where: any = {
+    status: 'APPROVED',
+    published: true,
+  };
+
+  if (filters?.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: 'insensitive' } },
+      { text: { contains: filters.search, mode: 'insensitive' } },
+    ];
+  }
+
   const [news, total] = await Promise.all([
     prisma.news.findMany({
-      where: {
-        status: 'APPROVED',
-        published: true,
-      },
+      where,
       include: {
         author: {
           select: {
@@ -54,10 +66,7 @@ export const getPublishedNews = async (
       take: limit,
     }),
     prisma.news.count({
-      where: {
-        status: 'APPROVED',
-        published: true
-      }
+      where
     }),
   ]);
 
