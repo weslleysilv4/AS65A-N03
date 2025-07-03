@@ -1,10 +1,7 @@
-'use client'
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "@/lib/react-query";
 import { metadata } from "./metadata";
-import Header from "@/components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export { metadata };
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,10 +23,16 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="icon" href="/icon-ELLP-News2.png" sizes="256x256" type="image/png" />
-        <title>ELLP News</title>
+        <link
+          rel="icon"
+          href="/icon-ELLP-News2.png"
+          sizes="256x256"
+          type="image/png"
+        />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>

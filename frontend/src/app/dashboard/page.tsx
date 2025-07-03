@@ -1,23 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuthGuard } from "@/hooks/useAuth";
+import Loading from "@/components/Loading";
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const { isAuthenticated, isLoading, isClient } = useAuthGuard();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
+  if (!isClient || isLoading) {
+    return <Loading message="Verificando autenticação..." />;
+  }
 
-    if (!token) {
-      alert('Você precisa estar logado para acessar o dashboard.');
-      router.push('/');
-    }
-  }, [router]);
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <h1 className="text-3xl font-bold text-gray-800">Bem-vindo ao Painel Administrativo!</h1>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          Bem-vindo ao Painel Administrativo!
+        </h1>
+        <p className="text-gray-600">
+          Você está autenticado e pode acessar todas as funcionalidades.
+        </p>
+      </div>
     </div>
   );
 }
