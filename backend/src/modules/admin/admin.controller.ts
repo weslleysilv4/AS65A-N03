@@ -1,18 +1,52 @@
-import { User } from '@prisma/client';
-import * as adminService from './admin.service';
-import { RequestHandler } from 'express';
+import { User } from "@prisma/client";
+import * as adminService from "./admin.service";
+import { RequestHandler } from "express";
 
 export const createUserHandler: RequestHandler = async (req, res, next) => {
-	const { email, password, name, role } = req.body as User & { password: string };
-	try {
-		const newUser = await adminService.createNewUser({ email, password, name, role});
-		res.status(201).json({
-			message: 'Usuário criado com sucesso!',
-			data: newUser,
-		});
-	} catch (error) {
-		next(error);
-	}
+  const { email, password, name, role } = req.body as User & {
+    password: string;
+  };
+  try {
+    const newUser = await adminService.createNewUser({
+      email,
+      password,
+      name,
+      role,
+    });
+    res.status(201).json({
+      message: "Usuário criado com sucesso!",
+      data: newUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllUsersHandler: RequestHandler = async (req, res, next) => {
+  try {
+    const users = await adminService.getAllUsers();
+    res.status(200).json({
+      message: "Usuários recuperados com sucesso",
+      users: users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserHandler: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role, name } = req.body;
+
+    const updatedUser = await adminService.updateUserRole(id, role, name);
+    res.status(200).json({
+      message: "Usuário atualizado com sucesso",
+      data: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
@@ -38,7 +72,7 @@ export const getPendingChangesHandler: RequestHandler = async (
   try {
     const pendingChanges = await adminService.getPendingChanges();
     res.status(200).json({
-      message: 'Mudanças pendentes recuperadas com sucesso',
+      message: "Mudanças pendentes recuperadas com sucesso",
       data: pendingChanges,
     });
   } catch (error) {
@@ -61,22 +95,21 @@ export const getPendingChangesHandler: RequestHandler = async (
  * const approvedChange = await approveChangeHandler(req, res, next);
  * ```
  */
-export const approveChangeHandler: RequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const approveChangeHandler: RequestHandler = async (req, res, next) => {
   const { id: changeId } = req.params;
   const user = req.user;
 
   if (!user.email) {
-    return next(new Error('Email do usuário não encontrado'));
+    return next(new Error("Email do usuário não encontrado"));
   }
 
   try {
-    const approvedChange = await adminService.approveChange(changeId, user.email);
+    const approvedChange = await adminService.approveChange(
+      changeId,
+      user.email
+    );
     res.status(200).json({
-      message: 'Mudança aprovada com sucesso',
+      message: "Mudança aprovada com sucesso",
       data: approvedChange,
     });
   } catch (error) {
@@ -106,17 +139,13 @@ export const approveChangeHandler: RequestHandler = async (
  * const rejectedChange = await rejectChangeHandler(req, res, next);
  * ```
  */
-export const rejectChangeHandler: RequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const rejectChangeHandler: RequestHandler = async (req, res, next) => {
   const { id: changeId } = req.params;
   const { rejectionReason } = req.body;
   const user = req.user;
 
   if (!user.email) {
-    return next(new Error('Email do usuário não encontrado'));
+    return next(new Error("Email do usuário não encontrado"));
   }
 
   try {
@@ -126,7 +155,7 @@ export const rejectChangeHandler: RequestHandler = async (
       rejectionReason
     );
     res.status(200).json({
-      message: 'Mudança rejeitada com sucesso',
+      message: "Mudança rejeitada com sucesso",
       data: rejectedChange,
     });
   } catch (error) {
@@ -158,11 +187,7 @@ export const rejectChangeHandler: RequestHandler = async (
  * const news = await getAllNewsHandler(req, res, next);
  * ```
  */
-export const getAllNewsHandler: RequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getAllNewsHandler: RequestHandler = async (req, res, next) => {
   const { status, page, limit } = req.query;
 
   try {
@@ -174,7 +199,7 @@ export const getAllNewsHandler: RequestHandler = async (
 
     const result = await adminService.getAllNews(filters);
     res.status(200).json({
-      message: 'Notícias recuperadas com sucesso',
+      message: "Notícias recuperadas com sucesso",
       data: result,
     });
   } catch (error) {
@@ -223,7 +248,7 @@ export const updateNewsDirectlyHandler: RequestHandler = async (
   const user = req.user;
 
   if (!user.email) {
-    return next(new Error('Email do usuário não encontrado'));
+    return next(new Error("Email do usuário não encontrado"));
   }
 
   try {
@@ -233,7 +258,7 @@ export const updateNewsDirectlyHandler: RequestHandler = async (
       user.email
     );
     res.status(200).json({
-      message: 'Notícia atualizada com sucesso',
+      message: "Notícia atualizada com sucesso",
       data: updatedNews,
     });
   } catch (error) {
