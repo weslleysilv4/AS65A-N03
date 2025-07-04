@@ -10,7 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import CategorySelector from "@/components/ui/CategorySelector";
-import { ArrowLeft, Save, Calendar, Clock, Tag, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Calendar,
+  Clock,
+  Tag,
+  X,
+  Sparkles,
+  FileText,
+} from "lucide-react";
 import type { UpdateChangeRequest } from "@/types/api";
 
 interface EditNewsFormProps {
@@ -111,10 +120,20 @@ export default function EditNewsForm({ newsId }: EditNewsFormProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="animate-pulse space-y-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-10 w-32 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+              <div className="space-y-6">
+                <div className="h-8 bg-gray-200 rounded-lg w-1/3"></div>
+                <div className="h-64 bg-gray-200 rounded-xl"></div>
+                <div className="h-32 bg-gray-200 rounded-xl"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -122,227 +141,296 @@ export default function EditNewsForm({ newsId }: EditNewsFormProps) {
 
   if (error || !newsItem) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">
-                Erro ao carregar notícia
-              </h3>
-              <p className="text-red-600 mb-4">
-                Não foi possível carregar os dados da notícia para edição.
-              </p>
-              <Button onClick={handleBack} variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+        <div className="max-w-5xl mx-auto p-6">
+          <Button
+            onClick={handleBack}
+            variant="outline"
+            className="mb-6 rounded-xl"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <Card className="border-0 shadow-xl bg-red-50 border-red-200">
+            <CardContent className="pt-8">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
+                  <X className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-red-800">
+                  Erro ao carregar notícia
+                </h3>
+                <p className="text-red-600">
+                  Não foi possível carregar os dados da notícia para edição.
+                </p>
+                <Button
+                  onClick={handleBack}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="mb-6">
-        <Button onClick={handleBack} variant="outline" className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Editar Notícia</h1>
-        <p className="text-gray-600 mt-1">
-          Faça as alterações necessárias na sua notícia
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Enhanced Header Section */}
+        <div className="mb-8">
+          <Button
+            onClick={handleBack}
+            variant="outline"
+            className="mb-6 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
 
-      <Card className="shadow-lg border-0">
-        <CardHeader className="pb-6">
-          <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-3">
-            <Save className="h-5 w-5 text-blue-600" />
-            Editar Artigo de Notícias
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <Label
-                  htmlFor="title"
-                  className="text-base font-medium text-gray-700"
-                >
-                  Título
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => updateFormField("title", e.target.value)}
-                  placeholder="Insira o título do artigo de notícias"
-                  required
-                  className="h-12 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <FileText className="w-8 h-8 text-white" />
               </div>
-
-              <div className="space-y-3">
-                <Label
-                  htmlFor="text"
-                  className="text-base font-medium text-gray-700"
-                >
-                  Conteúdo
-                </Label>
-                <Textarea
-                  id="text"
-                  value={formData.text}
-                  onChange={(e) => updateFormField("text", e.target.value)}
-                  placeholder="Digite o conteúdo da notícia"
-                  rows={8}
-                  required
-                  className="rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                />
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">
+                  Editar Notícia
+                </h1>
+                <p className="text-lg text-gray-600">
+                  Faça as alterações necessárias na sua notícia
+                </p>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="h-px bg-gray-200 w-full" />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-900">Categorias</h3>
-              <CategorySelector
-                selectedCategories={formData.categoryIds}
-                onCategoriesChange={(categories) =>
-                  updateFormField("categoryIds", categories)
-                }
-                label="Selecionar Categoria"
-                placeholder="Escolha uma categoria"
-                maxSelections={5}
-              />
-            </div>
-
-            <div className="h-px bg-gray-200 w-full" />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-900">Tags</h3>
-              <div className="space-y-3">
-                <Label
-                  htmlFor="tags"
-                  className="text-base font-medium text-gray-700"
-                >
-                  Tags
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="tags"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    placeholder="Insira tags separadas por vírgulas"
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                    className="h-12 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddTag}
-                    size="sm"
-                    variant="outline"
-                    className="h-12 px-4 rounded-xl"
-                  >
-                    <Tag className="h-4 w-4 mr-2" />
-                    Adicionar
-                  </Button>
-                </div>
-                {formData.tagsKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {formData.tagsKeywords.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center px-3 py-1.5 text-sm bg-blue-100 text-blue-800 rounded-full border border-blue-200"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTag(tag)}
-                          className="ml-2 text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
+        {/* Main Content Card */}
+        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-10">
+              {/* Essential Content Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <Label
+                      htmlFor="title"
+                      className="text-lg font-semibold text-gray-900 flex items-center gap-2"
+                    >
+                      <Sparkles className="w-5 h-5 text-blue-500" />
+                      Título
+                    </Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => updateFormField("title", e.target.value)}
+                      placeholder="Insira o título do artigo de notícias"
+                      required
+                      className="h-14 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-lg shadow-sm bg-white/80"
+                    />
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div className="h-px bg-gray-200 w-full" />
-
-            <div className="space-y-6">
-              <h3 className="text-lg font-bold text-gray-900">
-                Agendamento de Publicação
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="publishedAt"
-                    className="text-base font-medium text-gray-700 flex items-center gap-2"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Data de Publicação
-                  </Label>
-                  <Input
-                    id="publishedAt"
-                    type="datetime-local"
-                    value={formData.publishedAt}
-                    onChange={(e) =>
-                      updateFormField("publishedAt", e.target.value)
-                    }
-                    className="h-12 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="expirationDate"
-                    className="text-base font-medium text-gray-700 flex items-center gap-2"
-                  >
-                    <Clock className="h-4 w-4" />
-                    Data de Expiração
-                  </Label>
-                  <Input
-                    id="expirationDate"
-                    type="datetime-local"
-                    value={formData.expirationDate}
-                    onChange={(e) =>
-                      updateFormField("expirationDate", e.target.value)
-                    }
-                    className="h-12 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  <div className="space-y-4">
+                    <Label
+                      htmlFor="text"
+                      className="text-lg font-semibold text-gray-900 flex items-center gap-2"
+                    >
+                      <FileText className="w-5 h-5 text-blue-500" />
+                      Conteúdo
+                    </Label>
+                    <Textarea
+                      id="text"
+                      value={formData.text}
+                      onChange={(e) => updateFormField("text", e.target.value)}
+                      placeholder="Digite o conteúdo da notícia"
+                      rows={10}
+                      required
+                      className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none shadow-sm text-base leading-relaxed bg-white/80"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                className="h-12 px-6 rounded-xl border-gray-300 hover:bg-gray-50"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateChange.isPending}
-                className="h-12 px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {updateChange.isPending ? "Salvando..." : "Salvar Alterações"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Advanced Settings Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-6 bg-white text-gray-600 font-semibold text-base">
+                    Configurações Avançadas
+                  </span>
+                </div>
+              </div>
+
+              {/* Categories Section */}
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-blue-600" />
+                    Categorias
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategorySelector
+                    selectedCategories={formData.categoryIds}
+                    onCategoriesChange={(categories) =>
+                      updateFormField("categoryIds", categories)
+                    }
+                    label="Selecionar Categoria"
+                    placeholder="Escolha uma categoria"
+                    maxSelections={5}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Tags Section */}
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-green-600" />
+                    Tags
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-3">
+                      <Input
+                        id="tags"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        placeholder="Insira tags para melhor categorização"
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        className="h-12 rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 shadow-sm bg-white/80"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleAddTag}
+                        size="sm"
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-green-300 text-green-700 hover:bg-green-50"
+                      >
+                        <Tag className="h-4 w-4 mr-2" />
+                        Adicionar
+                      </Button>
+                    </div>
+
+                    {formData.tagsKeywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {formData.tagsKeywords.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-3 py-2 text-sm bg-green-100 text-green-800 border border-green-200 rounded-full hover:bg-green-200 transition-colors"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-2 text-green-600 hover:text-green-800 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Schedule Section */}
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-amber-50 to-orange-50">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-600" />
+                    Agendamento de Publicação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="publishedAt"
+                        className="text-base font-semibold text-gray-700 flex items-center gap-2"
+                      >
+                        <Calendar className="h-4 w-4 text-amber-600" />
+                        Data de Publicação
+                      </Label>
+                      <Input
+                        id="publishedAt"
+                        type="datetime-local"
+                        value={formData.publishedAt}
+                        onChange={(e) =>
+                          updateFormField("publishedAt", e.target.value)
+                        }
+                        className="h-12 rounded-xl border-gray-200 focus:border-amber-500 focus:ring-amber-500 shadow-sm bg-white/80"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="expirationDate"
+                        className="text-base font-semibold text-gray-700 flex items-center gap-2"
+                      >
+                        <Clock className="h-4 w-4 text-amber-600" />
+                        Data de Expiração
+                      </Label>
+                      <Input
+                        id="expirationDate"
+                        type="datetime-local"
+                        value={formData.expirationDate}
+                        onChange={(e) =>
+                          updateFormField("expirationDate", e.target.value)
+                        }
+                        className="h-12 rounded-xl border-gray-200 focus:border-amber-500 focus:ring-amber-500 shadow-sm bg-white/80"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-4 pt-8 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  className="h-12 px-8 rounded-xl border-gray-300 hover:bg-gray-50 font-medium"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateChange.isPending}
+                  className="h-12 px-10 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  {updateChange.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

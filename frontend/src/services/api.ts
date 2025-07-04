@@ -7,7 +7,7 @@ import axios, {
 } from "axios";
 import type {
   ApiResponse,
-  AuthResponse,
+  BackendAuthResponse,
   AuthUser,
   LoginRequest,
   RegisterRequest,
@@ -153,12 +153,9 @@ export const isAuthenticated = (): boolean => {
 
 export const login = async (
   credentials: LoginRequest
-): Promise<AuthResponse> => {
-  const response = await post<{ user: AuthResponse }>(
-    "/auth/login",
-    credentials
-  );
-  return response.user;
+): Promise<BackendAuthResponse> => {
+  const response = await post<BackendAuthResponse>("/auth/login", credentials);
+  return response;
 };
 
 export const register = async (
@@ -200,8 +197,10 @@ export const getPublicNews = async (params?: {
     const url = `/news${
       searchParams.toString() ? `?${searchParams.toString()}` : ""
     }`;
-    const response = await get<{ data: NewsItem[] }>(url);
-    return Array.isArray(response.data) ? response.data : [];
+    const response = await get<{
+      data: { news: NewsItem[]; pagination: number };
+    }>(url);
+    return Array.isArray(response.data.news) ? response.data.news : [];
   } catch (error) {
     console.error("Erro ao buscar notícias públicas:", error);
     return [];

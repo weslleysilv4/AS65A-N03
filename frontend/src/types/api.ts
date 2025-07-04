@@ -41,6 +41,13 @@ export interface AuthResponse {
   session: AuthSession;
 }
 
+export interface BackendAuthResponse {
+  user: {
+    user: AuthUser;
+    session: AuthSession;
+  };
+}
+
 export interface NewsCategory {
   id: string;
   name: string;
@@ -144,6 +151,17 @@ export interface CreateChangeRequest {
     tagsKeywords?: string[];
     publishedAt?: string;
     expirationDate?: string;
+    media?: {
+      url: string;
+      path: string;
+      alt?: string;
+      title?: string;
+      description?: string;
+      caption?: string;
+      copyright?: string;
+      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      order: number;
+    }[];
   };
 }
 
@@ -157,6 +175,17 @@ export interface UpdateChangeRequest {
     tagsKeywords?: string[];
     publishedAt?: string;
     expirationDate?: string;
+    media?: {
+      url: string;
+      path: string;
+      alt?: string;
+      title?: string;
+      description?: string;
+      caption?: string;
+      copyright?: string;
+      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      order: number;
+    }[];
   };
 }
 

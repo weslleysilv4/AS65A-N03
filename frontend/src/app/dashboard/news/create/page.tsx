@@ -1,14 +1,12 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import EditNewsForm from "@/components/publisher/EditNewsForm";
+import CreateNewsForm from "@/components/publisher/CreateNewsForm";
 
-export default function EditNewsPage() {
-  const params = useParams();
+export default function CreateNewsPage() {
   const router = useRouter();
-  const newsId = params.id as string;
 
   return (
     <div className="space-y-6">
@@ -24,7 +22,7 @@ export default function EditNewsPage() {
         </Button>
       </div>
 
-      <EditNewsForm newsId={newsId} />
+      <CreateNewsForm />
     </div>
   );
 }

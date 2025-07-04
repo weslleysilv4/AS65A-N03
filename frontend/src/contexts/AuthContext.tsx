@@ -20,6 +20,11 @@ interface JWTTokenData {
     name?: string;
     role?: "PUBLISHER" | "ADMIN";
   };
+  app_metadata?: {
+    role?: "PUBLISHER" | "ADMIN";
+    provider?: string;
+    providers?: string[];
+  };
 }
 
 interface AuthContextType {
@@ -62,6 +67,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             const tokenData = decodeJWTPayload(token) as JWTTokenData;
 
             if (tokenData) {
+              const role =
+                tokenData.user_metadata?.role ||
+                tokenData.role ||
+                tokenData.app_metadata?.role ||
+                "PUBLISHER";
+
               const userData: AuthUser = {
                 id: String(
                   tokenData.sub || tokenData.user_id || tokenData.id || ""
@@ -70,9 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 name: String(
                   tokenData.user_metadata?.name || tokenData.name || ""
                 ),
-                role: (tokenData.user_metadata?.role ||
-                  tokenData.role ||
-                  "PUBLISHER") as "PUBLISHER" | "ADMIN",
+                role: role as "PUBLISHER" | "ADMIN",
                 user_metadata: tokenData.user_metadata,
               };
 

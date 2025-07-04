@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import PublicHeader from "@/components/PublicHeader";
 import PublicNewsCard from "@/components/PublicNewsCard";
-import { useNewsById, useAdminNews } from "@/hooks/useNews";
+import { usePublicNewsById, usePublicNews } from "@/hooks/useNews";
 import { formatDate } from "@/utils/format";
 import Loading from "@/components/Loading";
 import Link from "next/link";
@@ -18,12 +18,12 @@ export default function NewsDetailPage() {
   const params = useParams();
   const newsId = params.id as string;
 
-  const { data: news, isLoading, error } = useNewsById(newsId);
-  const { data: adminNews = [] } = useAdminNews();
+  const { data: news, isLoading, error } = usePublicNewsById(newsId);
+  const { data: publicNews = [] } = usePublicNews();
 
   // Filtrar notícias relacionadas (mesmo categoria, excluindo a atual)
-  const relatedNews = Array.isArray(adminNews)
-    ? adminNews
+  const relatedNews = Array.isArray(publicNews)
+    ? publicNews
         .filter(
           (item: NewsItem) =>
             item.id !== newsId &&

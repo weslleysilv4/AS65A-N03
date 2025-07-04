@@ -61,43 +61,50 @@ export default function Sidebar({
 
   return (
     <div
-      className={`bg-gray-50 h-screen border-r border-gray-200 transition-all duration-300 flex flex-col ${
-        expanded ? "w-80" : "w-16"
+      className={`bg-white h-screen border-r border-gray-200 transition-all duration-300 flex flex-col ${
+        expanded ? "w-64" : "w-16"
       }`}
     >
+      {/* Header com logo melhorado */}
       <div className={`flex-shrink-0 ${expanded ? "p-6" : "p-3"}`}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between">
           <div
             className={`transition-opacity duration-300 ${
               expanded ? "opacity-100" : "opacity-0"
             }`}
           >
             {expanded && (
-              <>
-                <h1 className="text-lg font-medium text-gray-900">ELLP News</h1>
-                <p className="text-sm text-gray-600">
-                  {userRole === "ADMIN" ? "Administrador" : "Publisher"}
-                </p>
-              </>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-orange-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">E</span>
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">ELLP News</h1>
+                  <p className="text-xs text-gray-500">
+                    {userRole === "ADMIN" ? "Administrador" : "Publisher"}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
           {onToggleExpanded && (
             <button
               onClick={onToggleExpanded}
-              className="p-2 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
               title={expanded ? "Recolher sidebar" : "Expandir sidebar"}
             >
               {expanded ? (
-                <ChevronLeft size={20} className="text-gray-600" />
+                <ChevronLeft size={18} className="text-gray-600" />
               ) : (
-                <ChevronRight size={20} className="text-gray-600" />
+                <ChevronRight size={18} className="text-gray-600" />
               )}
             </button>
           )}
         </div>
       </div>
 
-      <nav className={`flex-1 space-y-2 ${expanded ? "px-6" : "px-2"}`}>
+      {/* Navegação */}
+      <nav className={`flex-1 space-y-1 ${expanded ? "px-4" : "px-2"} mt-4`}>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
@@ -108,10 +115,10 @@ export default function Sidebar({
               onClick={() => onItemClick(item.id)}
               className={`w-full flex items-center ${
                 expanded ? "gap-3 px-3" : "justify-center px-2"
-              } py-2 rounded-lg text-sm font-medium transition-colors ${
+              } py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-gray-200 text-gray-900"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
               }`}
               title={!expanded ? item.label : undefined}
             >
@@ -126,12 +133,13 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className={`border-t border-gray-200 ${expanded ? "p-6" : "p-3"}`}>
+      {/* Footer com logout */}
+      <div className={`border-t border-gray-200 ${expanded ? "p-4" : "p-3"}`}>
         <button
           onClick={handleLogout}
           className={`w-full flex items-center ${
             expanded ? "gap-3 px-3" : "justify-center px-2"
-          } py-2 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors`}
+          } py-3 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors`}
           title={!expanded ? "Sair" : undefined}
         >
           <LogOut size={20} className="flex-shrink-0" />

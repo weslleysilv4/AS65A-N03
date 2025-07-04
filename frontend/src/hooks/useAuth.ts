@@ -12,7 +12,7 @@ import { ROUTES, EVENTS, QUERY_CONFIG } from "@/utils/constants";
 import type {
   LoginRequest,
   RegisterRequest,
-  AuthResponse,
+  BackendAuthResponse,
   ApiResponse,
 } from "@/types/api";
 
@@ -21,29 +21,37 @@ export const useLogin = () => {
   const queryClient = useQueryClient();
   const { showError } = useErrorNotification();
 
-  return useMutation<AuthResponse, Error, LoginRequest>({
+  return useMutation<BackendAuthResponse, Error, LoginRequest>({
     mutationFn: login,
     onSuccess: (data) => {
       try {
-        const token = data.session?.access_token;
-        const user = data.user;
+        const token = data.user.session?.access_token;
+        const user = data.user.user;
 
         if (token && user) {
           setTokenInCookie(token);
 
-          // Dispatch custom event with user data
+          const formattedUser = {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.name,
+            role: user.user_metadata?.role || user.role || "PUBLISHER",
+            user_metadata: user.user_metadata,
+          };
+
           const authEvent = new CustomEvent(EVENTS.AUTH_LOGIN, {
-            detail: { user, token },
+            detail: { user: formattedUser, token },
           });
           window.dispatchEvent(authEvent);
 
-          // Invalidate all queries to refresh data
           queryClient.invalidateQueries({ queryKey: ["auth"] });
+          queryClient.invalidateQueries({ queryKey: ["news"] });
+          queryClient.invalidateQueries({ queryKey: ["categories"] });
+          queryClient.invalidateQueries({ queryKey: ["stats"] });
 
-          // Use setTimeout to avoid issues with router.push during render
           setTimeout(() => {
             router.push(ROUTES.DASHBOARD);
-          }, 0);
+          }, 200);
         }
       } catch (error) {
         console.error("Error in login success callback:", error);

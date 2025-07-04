@@ -22,6 +22,15 @@ import type {
   ApproveChangeRequest,
 } from "@/types/api";
 
+const QUERY_CONFIG = {
+  STALE_TIME: {
+    SHORT: 1 * 60 * 1000,
+    MEDIUM: 2 * 60 * 1000,
+    LONG: 5 * 60 * 1000,
+  },
+  RETRY_COUNT: 1,
+} as const;
+
 export const NEWS_QUERY_KEYS = {
   all: ["news"] as const,
   lists: () => [...NEWS_QUERY_KEYS.all, "list"] as const,
@@ -34,7 +43,6 @@ export const NEWS_QUERY_KEYS = {
   public: () => [...NEWS_QUERY_KEYS.all, "public"] as const,
 };
 
-// Public news hooks
 export const usePublicNews = (params?: {
   search?: string;
   category?: string;
@@ -44,8 +52,8 @@ export const usePublicNews = (params?: {
   return useQuery<NewsItem[], Error>({
     queryKey: [...NEWS_QUERY_KEYS.public(), params],
     queryFn: () => getPublicNews(params),
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
+    retry: QUERY_CONFIG.RETRY_COUNT,
   });
 };
 
@@ -53,8 +61,8 @@ export const usePublicNewsById = (id: string) => {
   return useQuery<NewsItem, Error>({
     queryKey: NEWS_QUERY_KEYS.detail(id),
     queryFn: () => getPublicNewsById(id),
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.LONG,
+    retry: QUERY_CONFIG.RETRY_COUNT,
     enabled: !!id,
   });
 };
@@ -63,19 +71,18 @@ export const useNewsById = (id: string) => {
   return useQuery<NewsItem, Error>({
     queryKey: NEWS_QUERY_KEYS.detail(id),
     queryFn: () => getPublicNewsById(id),
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.LONG,
+    retry: QUERY_CONFIG.RETRY_COUNT,
     enabled: !!id,
   });
 };
 
-// Publisher hooks
 export const useNews = () => {
   return useQuery<NewsItem[], Error>({
     queryKey: NEWS_QUERY_KEYS.publisher(),
     queryFn: getPublisherNews,
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
+    retry: QUERY_CONFIG.RETRY_COUNT,
   });
 };
 
@@ -83,8 +90,8 @@ export const usePendingChanges = () => {
   return useQuery<PendingChange[], Error>({
     queryKey: NEWS_QUERY_KEYS.pending(),
     queryFn: getPublisherPendingChanges,
-    staleTime: 1 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.SHORT,
+    retry: QUERY_CONFIG.RETRY_COUNT,
   });
 };
 
@@ -121,13 +128,12 @@ export const useUpdatePendingChange = () => {
   });
 };
 
-// Admin hooks
 export const useAdminNews = () => {
   return useQuery<NewsItem[], Error>({
     queryKey: NEWS_QUERY_KEYS.admin(),
     queryFn: getAdminNews,
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
+    retry: QUERY_CONFIG.RETRY_COUNT,
   });
 };
 
@@ -135,8 +141,8 @@ export const useAdminPendingChanges = () => {
   return useQuery<PendingChange[], Error>({
     queryKey: [...NEWS_QUERY_KEYS.pending(), "admin"],
     queryFn: getAdminPendingChanges,
-    staleTime: 1 * 60 * 1000,
-    retry: 1,
+    staleTime: QUERY_CONFIG.STALE_TIME.SHORT,
+    retry: QUERY_CONFIG.RETRY_COUNT,
   });
 };
 
