@@ -20,17 +20,28 @@ export interface AuthUser {
   id: string;
   email: string;
   name?: string;
-  role?: "ADM" | "PUBLISHER";
+  role?: "ADMIN" | "PUBLISHER";
+  user_metadata?: {
+    name?: string;
+    role?: "ADMIN" | "PUBLISHER";
+  };
 }
 
 export interface AuthSession {
   access_token: string;
   token_type: string;
   expires_in: number;
+  expires_at?: number;
   refresh_token?: string;
+  user: AuthUser;
 }
 
 export interface AuthResponse {
+  user: AuthUser;
+  session: AuthSession;
+}
+
+export interface BackendAuthResponse {
   user: {
     user: AuthUser;
     session: AuthSession;
@@ -45,17 +56,39 @@ export interface NewsCategory {
   updatedAt: string;
 }
 
+export interface MediaItem {
+  id: string;
+  url: string;
+  path: string;
+  alt?: string;
+  title?: string;
+  description?: string;
+  caption?: string;
+  copyright?: string;
+  type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+  order: number;
+  createdAt: string;
+}
+
 export interface NewsItem {
   id: string;
   title: string;
   text: string;
   authorId: string;
-  categoryIds: string[];
+  revisorId?: string;
+  categoryIds?: string[];
   categories?: NewsCategory[];
+  media?: MediaItem[];
   imageUrl?: string;
-  scheduledFor?: string;
-  expiresAt?: string;
-  status: "DRAFT" | "PUBLISHED" | "SCHEDULED" | "EXPIRED";
+  publishedAt?: string;
+  expirationDate?: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "ARCHIVED";
+  published: boolean;
+  tagsKeywords?: string[];
+  viewCount?: number;
+  revisionDate?: string;
+  mainPageDisplayDate?: string;
+  newsListPageDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,10 +96,11 @@ export interface NewsItem {
 export interface CreateNewsRequest {
   title: string;
   text: string;
-  categoryIds: string[];
+  categoryIds?: string[];
   imageUrl?: string;
-  scheduledFor?: string;
-  expiresAt?: string;
+  publishedAt?: string;
+  expirationDate?: string;
+  tagsKeywords?: string[];
 }
 
 export interface UpdateNewsRequest extends Partial<CreateNewsRequest> {
@@ -75,13 +109,84 @@ export interface UpdateNewsRequest extends Partial<CreateNewsRequest> {
 
 export interface PendingChange {
   id: string;
-  type: "CREATE" | "UPDATE" | "DELETE";
+  type: "CREATE" | "UPDATE";
   authorId: string;
+  reviewerId?: string;
   newsId?: string;
   content: Record<string, unknown>;
   status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  author?: AuthUser;
+  reviewer?: AuthUser;
+  news?: NewsItem;
+}
+
+// Admin interfaces
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password: string;
+  role?: "ADMIN" | "PUBLISHER";
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  role?: "ADMIN" | "PUBLISHER";
+}
+
+export interface ApproveChangeRequest {
+  status: "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+}
+
+// Publisher interfaces for pending changes
+export interface CreateChangeRequest {
+  type: "CREATE";
+  content: {
+    title: string;
+    text: string;
+    categoryIds?: string[];
+    tagsKeywords?: string[];
+    publishedAt?: string;
+    expirationDate?: string;
+    media?: {
+      url: string;
+      path: string;
+      alt?: string;
+      title?: string;
+      description?: string;
+      caption?: string;
+      copyright?: string;
+      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      order: number;
+    }[];
+  };
+}
+
+export interface UpdateChangeRequest {
+  type: "UPDATE";
+  newsId: string;
+  content: {
+    title?: string;
+    text?: string;
+    categoryIds?: string[];
+    tagsKeywords?: string[];
+    publishedAt?: string;
+    expirationDate?: string;
+    media?: {
+      url: string;
+      path: string;
+      alt?: string;
+      title?: string;
+      description?: string;
+      caption?: string;
+      copyright?: string;
+      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      order: number;
+    }[];
+  };
 }
 
 export interface CreateCategoryRequest {

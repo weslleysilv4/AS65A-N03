@@ -7,18 +7,22 @@ import axios, {
 } from "axios";
 import type {
   ApiResponse,
-  AuthResponse,
+  BackendAuthResponse,
+  AuthUser,
   LoginRequest,
   RegisterRequest,
   NewsItem,
   NewsCategory,
-  CreateNewsRequest,
-  UpdateNewsRequest,
   PendingChange,
   CreateCategoryRequest,
   UpdateCategoryRequest,
   NewsStats,
   CategoryStats,
+  CreateChangeRequest,
+  UpdateChangeRequest,
+  ApproveChangeRequest,
+  CreateUserRequest,
+  UpdateUserRequest,
 } from "@/types/api";
 
 const API_BASE_URL = "http://localhost:3000/api";
@@ -36,7 +40,10 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
 
       if (token) {
         config.headers = config.headers || {};
@@ -58,8 +65,8 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     if (typeof window !== "undefined") {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         window.dispatchEvent(new CustomEvent("auth-logout"));
 
         if (window.location.pathname !== "/login") {
@@ -121,27 +128,34 @@ export const del = async <T = unknown>(
 
 export const setAuthToken = (token: string) => {
   if (typeof window !== "undefined") {
-    localStorage.setItem("token", token);
+    document.cookie = `token=${token}; path=/; max-age=${
+      7 * 24 * 60 * 60
+    }; SameSite=Lax`;
   }
 };
 
 export const removeAuthToken = () => {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }
 };
 
 export const isAuthenticated = (): boolean => {
   if (typeof window !== "undefined") {
-    return !!localStorage.getItem("token");
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+    return !!token;
   }
   return false;
 };
 
 export const login = async (
   credentials: LoginRequest
-): Promise<AuthResponse> => {
-  return post<AuthResponse>("/auth/login", credentials);
+): Promise<BackendAuthResponse> => {
+  const response = await post<BackendAuthResponse>("/auth/login", credentials);
+  return response;
 };
 
 export const register = async (
@@ -151,46 +165,180 @@ export const register = async (
 };
 
 export const logout = async (): Promise<void> => {
-  removeAuthToken();
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
+  try {
+    await post("/auth/logout");
+  } catch (error) {
+    console.warn("Erro ao fazer logout no servidor:", error);
+  } finally {
+    removeAuthToken();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("auth-logout"));
+      window.location.href = "/login";
+    }
   }
 };
 
 // ============ NEWS OPERATIONS ============
 
-export const getNews = async (): Promise<NewsItem[]> => {
-  const response = await get<{ data: NewsItem[] }>("/publisher/news");
+// Public news endpoints
+export const getPublicNews = async (params?: {
+  search?: string;
+  category?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<NewsItem[]> => {
+  try {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.category) searchParams.append("category", params.category);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.offset) searchParams.append("offset", params.offset.toString());
+
+    const url = `/news${
+      searchParams.toString() ? `?${searchParams.toString()}` : ""
+    }`;
+    const response = await get<{
+      data: { news: NewsItem[]; pagination: number };
+    }>(url);
+    return Array.isArray(response.data.news) ? response.data.news : [];
+  } catch (error) {
+    console.error("Erro ao buscar notícias públicas:", error);
+    return [];
+  }
+};
+
+export const getPublicNewsById = async (id: string): Promise<NewsItem> => {
+  const response = await get<{ data: NewsItem }>(`/news/${id}`);
   return response.data;
 };
 
-export const createNews = async (
-  newsData: CreateNewsRequest
-): Promise<ApiResponse<NewsItem>> => {
-  return post<ApiResponse<NewsItem>>("/publisher/changes", newsData);
+// Publisher news endpoints
+export const getPublisherNews = async (): Promise<NewsItem[]> => {
+  try {
+    const response = await get<{ data: NewsItem[] }>("/publisher/news");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar notícias do publisher:", error);
+    return [];
+  }
 };
 
-export const updateNews = async (
+export const getPublisherPendingChanges = async (): Promise<
+  PendingChange[]
+> => {
+  try {
+    const response = await get<{ data: PendingChange[] }>("/publisher/changes");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar mudanças pendentes do publisher:", error);
+    return [];
+  }
+};
+
+export const createPendingChange = async (
+  changeData: CreateChangeRequest
+): Promise<ApiResponse<PendingChange>> => {
+  return post<ApiResponse<PendingChange>>("/publisher/changes", changeData);
+};
+
+export const updatePendingChange = async (
   id: string,
-  newsData: UpdateNewsRequest
+  changeData: UpdateChangeRequest
+): Promise<ApiResponse<PendingChange>> => {
+  return put<ApiResponse<PendingChange>>(
+    `/publisher/changes/${id}`,
+    changeData
+  );
+};
+
+export const getAdminNews = async (): Promise<NewsItem[]> => {
+  try {
+    const response = await get<{
+      data: {
+        news: NewsItem[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          pages: number;
+        };
+      };
+    }>("/admin/news");
+
+    // Garantir que sempre retorna um array
+    return Array.isArray(response.data.news) ? response.data.news : [];
+  } catch (error) {
+    console.error("Erro ao buscar notícias admin:", error);
+    return [];
+  }
+};
+
+export const updateAdminNews = async (
+  id: string,
+  newsData: Partial<NewsItem>
 ): Promise<ApiResponse<NewsItem>> => {
-  return put<ApiResponse<NewsItem>>(`/publisher/changes/${id}`, newsData);
+  return put<ApiResponse<NewsItem>>(`/admin/news/${id}`, newsData);
 };
 
 export const deleteNews = async (id: string): Promise<ApiResponse> => {
-  return del<ApiResponse>(`/publisher/changes/${id}`);
+  return updateAdminNews(id, { status: "ARCHIVED" });
 };
 
-export const getPendingChanges = async (): Promise<PendingChange[]> => {
-  const response = await get<{ data: PendingChange[] }>("/publisher/changes");
-  return response.data;
+export const archiveNews = async (
+  id: string
+): Promise<ApiResponse<NewsItem>> => {
+  return updateAdminNews(id, { status: "ARCHIVED", published: false });
+};
+
+export const getAdminPendingChanges = async (): Promise<PendingChange[]> => {
+  try {
+    const response = await get<{ data: PendingChange[] }>(
+      "/admin/changes/pending"
+    );
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar mudanças pendentes:", error);
+    return [];
+  }
+};
+
+export const approveChange = async (
+  id: string,
+  data: ApproveChangeRequest
+): Promise<ApiResponse<PendingChange>> => {
+  return post<ApiResponse<PendingChange>>(`/admin/changes/${id}/approve`, data);
+};
+
+export const rejectChange = async (
+  id: string,
+  data: ApproveChangeRequest
+): Promise<ApiResponse<PendingChange>> => {
+  return post<ApiResponse<PendingChange>>(`/admin/changes/${id}/reject`, data);
+};
+
+export const createAdminUser = async (
+  userData: CreateUserRequest
+): Promise<ApiResponse<AuthUser>> => {
+  return post<ApiResponse<AuthUser>>("/admin/users", userData);
+};
+
+export const getAdminUsers = async (): Promise<AuthUser[]> => {
+  const response = await get<{ users: AuthUser[] }>("/admin/users");
+  return response.users;
+};
+
+export const updateAdminUser = async (
+  userId: string,
+  userData: UpdateUserRequest
+): Promise<ApiResponse<AuthUser>> => {
+  return put<ApiResponse<AuthUser>>(`/admin/users/${userId}`, userData);
 };
 
 // ============ CATEGORY OPERATIONS ============
 
 export const getCategories = async (): Promise<NewsCategory[]> => {
-  const response = await get<{ data: NewsCategory[] }>("/categories");
-  return response.data;
+  const response = await get<{ categories: NewsCategory[] }>("/categories");
+  return response.categories;
 };
 
 export const createCategory = async (

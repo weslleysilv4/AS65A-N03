@@ -1,5 +1,6 @@
 import { AxiosError } from "axios";
 import { useCallback } from "react";
+import toast from "react-hot-toast";
 import type { ApiError } from "@/types/api";
 
 export const useErrorHandler = () => {
@@ -82,19 +83,23 @@ export const useErrorNotification = () => {
     (error: Error) => {
       const errorInfo = handleError(error);
 
-      // Aqui você pode integrar com qualquer biblioteca de notificação
-      // Por exemplo: react-hot-toast, react-toastify, etc.
-      console.error(`${errorInfo.title}: ${errorInfo.message}`);
-
-      // Para desenvolvimento, mostra um alert
-      if (process.env.NODE_ENV === "development") {
-        alert(`${errorInfo.title}: ${errorInfo.message}`);
-      }
+      // Usar toast ao invés de console/alert
+      toast.error(`${errorInfo.title}: ${errorInfo.message}`, {
+        duration: 5000,
+        position: "top-right",
+      });
 
       return errorInfo;
     },
     [handleError]
   );
 
-  return { showError };
+  const showSuccess = useCallback((message: string) => {
+    toast.success(message, {
+      duration: 3000,
+      position: "top-right",
+    });
+  }, []);
+
+  return { showError, showSuccess };
 };

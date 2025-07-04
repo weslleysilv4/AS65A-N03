@@ -1,8 +1,8 @@
-import { Prisma, User } from '@prisma/client';
-import prisma from '../../shared/lib/prisma';
-import { InternalServerError } from '../../shared/errors/InternalServerError';
-import { NotFoundError } from '../../shared/errors/NotFoundError';
-import { supabase } from '../../shared/lib/supabase';
+import { Prisma, User } from "@prisma/client";
+import prisma from "../../shared/lib/prisma";
+import { InternalServerError } from "../../shared/errors/InternalServerError";
+import { NotFoundError } from "../../shared/errors/NotFoundError";
+import { supabase } from "../../shared/lib/supabase";
 
 /**
  * Creates a new user in the system.
@@ -30,10 +30,89 @@ export const createNewUser = async (
   });
 
   if (error) {
-    throw new InternalServerError(error, 'Erro ao criar usuário');
+    throw new InternalServerError(error, "Erro ao criar usuário");
   }
 
   return data.user;
+};
+
+/**
+ * Retrieves all users in the system.
+ *
+ * @returns {Promise<User[]>} Returns the list of all users
+ * @throws {InternalServerError} Throws an error if retrieval fails
+ *
+ * @example
+ * ```typescript
+ * const users = await getAllUsers();
+ * ```
+ */
+export const getAllUsers = async () => {
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers();
+
+    if (error) {
+      throw new InternalServerError(error, "Erro ao buscar usuários");
+    }
+
+    return data.users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.name,
+      role: user.user_metadata?.role || "PUBLISHER",
+    }));
+  } catch (error) {
+    throw new InternalServerError(error as Error, "Erro ao buscar usuários");
+  }
+};
+
+/**
+ * Updates a user's role in the system.
+ *
+ * @param {string} userId - The ID of the user to update
+ * @param {string} role - The new role for the user
+ * @returns {Promise<User>} Returns the updated user
+ * @throws {InternalServerError} Throws an error if the update fails
+ * @throws {NotFoundError} Throws an error if the user is not found
+ *
+ * @example
+ * ```typescript
+ * const updatedUser = await updateUserRole('user-id', 'ADMIN');
+ * ```
+ */
+export const updateUserRole = async (
+  userId: string,
+  role: string,
+  name?: string
+) => {
+  try {
+    const { data, error } = await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: {
+        role: role,
+        name: name,
+      },
+    });
+
+    if (error) {
+      throw new InternalServerError(error, "Erro ao atualizar usuário");
+    }
+
+    if (!data.user) {
+      throw new InternalServerError(
+        new Error("Usuário não encontrado"),
+        "Usuário não encontrado"
+      );
+    }
+
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name,
+      role: data.user.user_metadata?.role || "PUBLISHER",
+    };
+  } catch (error) {
+    throw new InternalServerError(error as Error, "Erro ao atualizar usuário");
+  }
 };
 
 /**
@@ -50,7 +129,7 @@ export const createNewUser = async (
 export const getPendingChanges = async () => {
   const pendingChanges = await prisma.pendingChange.findMany({
     where: {
-      status: 'PENDING',
+      status: "PENDING",
     },
     include: {
       author: {
@@ -69,12 +148,12 @@ export const getPendingChanges = async () => {
       },
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
   });
 
   if (!pendingChanges || pendingChanges.length === 0) {
-    throw new NotFoundError('pendingChanges');
+    throw new NotFoundError("pendingChanges");
   }
 
   return pendingChanges;
@@ -106,13 +185,13 @@ export const approveChange = async (
   });
 
   if (!pendingChange) {
-    throw new NotFoundError('pendingChanges');
+    throw new NotFoundError("pendingChanges");
   }
 
-  if (pendingChange.status !== 'PENDING') {
+  if (pendingChange.status !== "PENDING") {
     throw new InternalServerError(
       new Error(),
-      'Apenas mudanças pendentes podem ser aprovadas'
+      "Apenas mudanças pendentes podem ser aprovadas"
     );
   }
 
@@ -123,7 +202,7 @@ export const approveChange = async (
   if (!reviewer) {
     throw new InternalServerError(
       new Error(),
-      'Usuário revisor não encontrado no sistema'
+      "Usuário revisor não encontrado no sistema"
     );
   }
 
@@ -132,14 +211,14 @@ export const approveChange = async (
     const updatedChange = await prisma.pendingChange.update({
       where: { id: changeId },
       data: {
-        status: 'APPROVED',
+        status: "APPROVED",
         reviewerId: reviewer.id,
         updatedAt: new Date(),
       },
     });
 
     // Execute the change based on type
-    if (pendingChange.type === 'CREATE') {
+    if (pendingChange.type === "CREATE") {
       const newsData = pendingChange.content as any;
       let validCategoryIds: string[] = [];
       if (newsData.categoryIds && newsData.categoryIds.length > 0) {
@@ -157,7 +236,7 @@ export const approveChange = async (
           expirationDate: newsData.expirationDate
             ? new Date(newsData.expirationDate)
             : null,
-          status: 'APPROVED',
+          status: "APPROVED",
           published: true,
           publishedAt: new Date(),
           authorId: pendingChange.authorId,
@@ -194,7 +273,7 @@ export const approveChange = async (
       });
 
       return { ...updatedChange, createdNews: newNews };
-    } else if (pendingChange.type === 'UPDATE') {
+    } else if (pendingChange.type === "UPDATE") {
       const newsData = pendingChange.content as any;
 
       let validCategoryIds: string[] = [];
@@ -214,7 +293,7 @@ export const approveChange = async (
           expirationDate: newsData.expirationDate
             ? new Date(newsData.expirationDate)
             : null,
-          status: 'APPROVED',
+          status: "APPROVED",
           revisorId: reviewer.id,
           revisionDate: new Date(),
           published:
@@ -243,7 +322,7 @@ export const approveChange = async (
 
     return updatedChange;
   } catch (error) {
-    throw new InternalServerError(error as Error, 'Falha ao aprovar a mudança');
+    throw new InternalServerError(error as Error, "Falha ao aprovar a mudança");
   }
 };
 
@@ -272,13 +351,13 @@ export const rejectChange = async (
   });
 
   if (!pendingChange) {
-    throw new NotFoundError('pendingChanges');
+    throw new NotFoundError("pendingChanges");
   }
 
-  if (pendingChange.status !== 'PENDING') {
+  if (pendingChange.status !== "PENDING") {
     throw new InternalServerError(
       new Error(),
-      'Apenas mudanças pendentes podem ser rejeitadas'
+      "Apenas mudanças pendentes podem ser rejeitadas"
     );
   }
 
@@ -289,7 +368,7 @@ export const rejectChange = async (
   if (!reviewer) {
     throw new InternalServerError(
       new Error(),
-      'Usuário revisor não encontrado no sistema'
+      "Usuário revisor não encontrado no sistema"
     );
   }
 
@@ -297,7 +376,7 @@ export const rejectChange = async (
     const rejectedChange = await prisma.pendingChange.update({
       where: { id: changeId },
       data: {
-        status: 'REJECTED',
+        status: "REJECTED",
         rejectionReason,
         reviewerId: reviewer.id,
         updatedAt: new Date(),
@@ -308,7 +387,7 @@ export const rejectChange = async (
   } catch (error) {
     throw new InternalServerError(
       error as Error,
-      'Falha ao rejeitar a mudança'
+      "Falha ao rejeitar a mudança"
     );
   }
 };
@@ -368,12 +447,12 @@ export const getAllNews = async (filters?: {
         },
         media: {
           orderBy: {
-            order: 'asc',
+            order: "asc",
           },
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       skip,
       take: limit,
@@ -382,7 +461,7 @@ export const getAllNews = async (filters?: {
   ]);
 
   if (!news || news.length === 0) {
-    throw new NotFoundError('news');
+    throw new NotFoundError("news");
   }
 
   return {
@@ -421,7 +500,7 @@ export const updateNewsDirectly = async (
   });
 
   if (!existingNews) {
-    throw new NotFoundError('news');
+    throw new NotFoundError("news");
   }
 
   // Find the admin user by email
@@ -432,7 +511,7 @@ export const updateNewsDirectly = async (
   if (!admin) {
     throw new InternalServerError(
       new Error(),
-      'Usuário administrador não encontrado no sistema'
+      "Usuário administrador não encontrado no sistema"
     );
   }
 
@@ -469,7 +548,7 @@ export const updateNewsDirectly = async (
       if (existingCategories.length !== newsData.categoryIds.length) {
         throw new InternalServerError(
           new Error(),
-          'Uma ou mais categorias não foram encontradas'
+          "Uma ou mais categorias não foram encontradas"
         );
       }
 
@@ -505,7 +584,7 @@ export const updateNewsDirectly = async (
         },
         media: {
           orderBy: {
-            order: 'asc',
+            order: "asc",
           },
         },
       },
@@ -515,7 +594,7 @@ export const updateNewsDirectly = async (
   } catch (error) {
     throw new InternalServerError(
       error as Error,
-      'Falha ao atualizar a notícia'
+      "Falha ao atualizar a notícia"
     );
   }
 };

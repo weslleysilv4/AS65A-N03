@@ -6,7 +6,15 @@ interface NewsCardProps {
   content: string;
   imageUrl?: string;
   createdAt: string;
-  status?: "DRAFT" | "PUBLISHED" | "SCHEDULED" | "EXPIRED";
+  status?:
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "ARCHIVED"
+    | "DRAFT"
+    | "PUBLISHED"
+    | "SCHEDULED"
+    | "EXPIRED";
 }
 
 export default function NewsCard({
@@ -26,6 +34,14 @@ export default function NewsCard({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-700";
+      case "APPROVED":
+        return "bg-green-100 text-green-700";
+      case "REJECTED":
+        return "bg-red-100 text-red-700";
+      case "ARCHIVED":
+        return "bg-gray-100 text-gray-700";
       case "DRAFT":
         return "bg-gray-100 text-gray-700";
       case "PUBLISHED":
