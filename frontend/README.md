@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💻 Frontend - ELLP News
 
-## Getting Started
+Interface web do sistema ELLP News, responsável pela interação com o usuário, visualização de notícias, gerenciamento de conteúdo e controle de acesso baseado em permissões.
 
-First, run the development server:
+Construída com **Next.js**, **React** e **Tailwind CSS**, a interface é responsiva e adaptada para múltiplos dispositivos (desktop, tablet e mobile).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🎯 Funcionalidades
+
+- Login seguro com validação de campos e mensagens visuais
+- Painel administrativo com permissões distintas para:
+  - **Administrador**: gerencia categorias, aprova/rejeita notícias
+  - **Publicador**: cria, edita e agenda publicações
+- Página pública com:
+  - Lista de notícias
+  - Busca com filtros por título, categoria e tags
+  - Visualização de conteúdo completo
+- Feedback visual com **React Hot Toast**
+- Responsividade total (desktop, tablet e mobile)
+
+---
+
+## 🧱 Tecnologias Utilizadas
+
+| Ferramenta          | Versão     | Link                            |
+|---------------------|------------|---------------------------------|
+| Next.js             | 15.x       | https://nextjs.org              |
+| React               | 19.x       | https://react.dev               |
+| TypeScript          | 5.x        | https://www.typescriptlang.org  |
+| Tailwind CSS        | 4.x        | https://tailwindcss.com         |
+| React Hook Form     | 7.59.0     | https://react-hook-form.com     |
+| Zod                 | 3.25.x     | https://github.com/colinhacks/zod |
+| TanStack Query      | 5.81.5     | https://tanstack.com/query/v5   |
+| Axios               | 1.10.0     | https://axios-http.com          |
+| Lucide React        | 0.525.0    | https://lucide.dev              |
+| Radix UI            | múltiplas  | https://www.radix-ui.com        |
+| React Hot Toast     | 2.5.2      | https://react-hot-toast.com     |
+
+---
+
+## 📁 Estrutura de Pastas
+
+```
+frontend/
+├── pages/         # Rotas e páginas da aplicação
+│   ├── index.tsx
+│   ├── login.tsx
+│   ├── dashboard/
+├── components/    # Componentes reutilizáveis
+├── services/      # Configuração do Axios e chamadas de API
+├── hooks/         # Hooks customizados
+├── styles/        # Estilos globais
+└── public/        # Arquivos estáticos
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Como rodar o frontend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> ⚠️ Certifique-se de que o backend já está rodando em `http://localhost:3000`
 
-## Learn More
+```bash
+# 1. Acesse a pasta do frontend
+cd frontend
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Instale as dependências
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 3. Execute o servidor de desenvolvimento 
+npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Acesse a aplicação em:
+http://localhost:3001
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧪 Testes visuais sugeridos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Login com as contas de teste:
+   - admin@ellp.com / admin123
+   - publisher@ellp.com / publisher123
+
+2. Criação de notícias (com imagens, tags, datas agendadas)
+
+3. Aprovação de notícias (admin)
+
+4. Edição com mudança pendente
+
+5. Busca e filtros por categoria/tags
+
+6. Responsividade:
+   - Celular
+   - Tablet
+   - Desktop
+   - Modo claro/escuro (se aplicável)
+
+---
+
+## 🛠️ Comandos úteis
+
+```bash
+npm run dev       # Executar em modo desenvolvimento
+npm run build     # Gerar build de produção
+npm start         # Rodar versão compilada
+npm run lint      # Verificar problemas de lint
+npm run lint -- --fix  # Corrigir automaticamente
+```
+
+---
+
+📅 Última atualização: **Julho/2025**
