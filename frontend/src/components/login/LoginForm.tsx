@@ -1,50 +1,44 @@
 import { useState } from "react";
 import { useLogin } from "@/hooks/useAuth";
+import { useErrorNotification } from "@/hooks/useErrorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User } from "lucide-react";
 
 interface LoginFormProps {
-  onSuccess?: () => void;
   className?: string;
 }
 
-export default function LoginForm({
-  onSuccess,
-  className = "",
-}: LoginFormProps) {
+const FORM_CONFIG = {
+  MIN_EMAIL_LENGTH: 3,
+  MIN_PASSWORD_LENGTH: 6,
+} as const;
+
+export default function LoginForm({ className = "" }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const { mutate: loginUser, isPending, error } = useLogin();
+  const { showError } = useErrorNotification();
+
+  const isFormValid =
+    email.length >= FORM_CONFIG.MIN_EMAIL_LENGTH &&
+    password.length >= FORM_CONFIG.MIN_PASSWORD_LENGTH;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
 
-    loginUser(
-      { email, password },
-      {
-        onSuccess: () => {
-          onSuccess?.();
-        },
-      }
-    );
+    if (!isFormValid) return;
+
+    try {
+      loginUser({ email, password });
+    } catch (error) {
+      console.error("Error in form submission:", error);
+    }
   };
 
-  const handleAdminLogin = () => {
-    loginUser(
-      {
-        email: "admin@email.com",
-        password: "admin12345678",
-      },
-      {
-        onSuccess: () => {
-          onSuccess?.();
-        },
-      }
-    );
+  const handleForgotPassword = () => {
+    showError(new Error('Função "Esqueceu a senha?" ainda não implementada'));
   };
 
   return (
@@ -135,9 +129,7 @@ export default function LoginForm({
                 variant="link"
                 className="text-sm text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 p-0 h-auto"
                 disabled={isPending}
-                onClick={() =>
-                  alert('Função "Esqueceu a senha?" ainda não implementada')
-                }
+                onClick={handleForgotPassword}
               >
                 Esqueceu a senha?
               </Button>
@@ -147,7 +139,7 @@ export default function LoginForm({
             <div className="py-3">
               <Button
                 type="submit"
-                disabled={isPending || !email || !password}
+                disabled={isPending || !isFormValid}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2.5 px-4 rounded-lg font-bold text-sm md:text-base transition-colors disabled:cursor-not-allowed"
                 aria-describedby={isPending ? "login-status" : undefined}
               >
@@ -161,24 +153,6 @@ export default function LoginForm({
             </div>
           </div>
         </form>
-
-        {/* Admin Login Button */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">Para desenvolvimento:</p>
-          </div>
-          <Button
-            type="button"
-            onClick={handleAdminLogin}
-            disabled={isPending}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2.5 px-4 rounded-lg font-bold text-sm md:text-base transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <User size={20} />
-            {isPending
-              ? "Entrando como Admin..."
-              : "Login Admin (Desenvolvimento)"}
-          </Button>
-        </div>
       </div>
     </div>
   );

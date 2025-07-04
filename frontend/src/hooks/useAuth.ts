@@ -3,6 +3,12 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { login, register, logout } from "@/services/api";
 import { useErrorNotification } from "./useErrorHandler";
+import {
+  getTokenFromCookie,
+  setTokenInCookie,
+  removeTokenFromCookie,
+} from "@/utils/auth";
+import { ROUTES, EVENTS, QUERY_CONFIG } from "@/utils/constants";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -18,13 +24,30 @@ export const useLogin = () => {
   return useMutation<AuthResponse, Error, LoginRequest>({
     mutationFn: login,
     onSuccess: (data) => {
-      const token = data.user.session.access_token;
-      
-      if (token) {
-        document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-        window.dispatchEvent(new CustomEvent('auth-login'));
-        queryClient.invalidateQueries();
-        router.push("/dashboard");
+      try {
+        const token = data.session?.access_token;
+        const user = data.user;
+
+        if (token && user) {
+          setTokenInCookie(token);
+
+          // Dispatch custom event with user data
+          const authEvent = new CustomEvent(EVENTS.AUTH_LOGIN, {
+            detail: { user, token },
+          });
+          window.dispatchEvent(authEvent);
+
+          // Invalidate all queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["auth"] });
+
+          // Use setTimeout to avoid issues with router.push during render
+          setTimeout(() => {
+            router.push(ROUTES.DASHBOARD);
+          }, 0);
+        }
+      } catch (error) {
+        console.error("Error in login success callback:", error);
+        showError(error as Error);
       }
     },
     onError: (error) => {
@@ -40,7 +63,7 @@ export const useRegister = () => {
   return useMutation<ApiResponse, Error, RegisterRequest>({
     mutationFn: register,
     onSuccess: () => {
-      router.push("/login");
+      router.push(ROUTES.LOGIN);
     },
     onError: (error) => {
       showError(error);
@@ -56,17 +79,29 @@ export const useLogout = () => {
   return useMutation<void, Error, void>({
     mutationFn: logout,
     onSuccess: () => {
-      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      window.dispatchEvent(new CustomEvent('auth-logout'));
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
-      queryClient.clear();
-      router.push("/login");
+      try {
+        removeTokenFromCookie();
+        window.dispatchEvent(new CustomEvent(EVENTS.AUTH_LOGOUT));
+        queryClient.invalidateQueries({ queryKey: ["auth"] });
+        queryClient.clear();
+
+        // Use setTimeout to avoid issues with router.push during render
+        setTimeout(() => {
+          router.push(ROUTES.LOGIN);
+        }, 0);
+      } catch (error) {
+        console.error("Error in logout success callback:", error);
+        showError(error as Error);
+      }
     },
     onError: (error) => {
       showError(error);
     },
   });
 };
+
+// Utility functions
+// (Removed duplicate - using imported version from utils/auth.ts)
 
 export const useAuthStatus = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -77,11 +112,7 @@ export const useAuthStatus = () => {
     setIsClient(true);
 
     const checkAuth = () => {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('token='))
-        ?.split('=')[1];
-      
+      const token = getTokenFromCookie();
       setIsAuthenticated(!!token);
       setIsLoading(false);
     };
@@ -100,14 +131,14 @@ export const useAuthStatus = () => {
       setIsAuthenticated(false);
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("auth-login", handleAuthLogin);
-    window.addEventListener("auth-logout", handleAuthLogout);
+    window.addEventListener(EVENTS.STORAGE, handleStorageChange);
+    window.addEventListener(EVENTS.AUTH_LOGIN, handleAuthLogin);
+    window.addEventListener(EVENTS.AUTH_LOGOUT, handleAuthLogout);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("auth-login", handleAuthLogin);
-      window.removeEventListener("auth-logout", handleAuthLogout);
+      window.removeEventListener(EVENTS.STORAGE, handleStorageChange);
+      window.removeEventListener(EVENTS.AUTH_LOGIN, handleAuthLogin);
+      window.removeEventListener(EVENTS.AUTH_LOGOUT, handleAuthLogout);
     };
   }, []);
 
@@ -129,10 +160,10 @@ export const useAuth = () => {
       queryClient.invalidateQueries({ queryKey: ["auth"] });
     };
 
-    window.addEventListener("auth-logout", handleAuthLogout);
+    window.addEventListener(EVENTS.AUTH_LOGOUT, handleAuthLogout);
 
     return () => {
-      window.removeEventListener("auth-logout", handleAuthLogout);
+      window.removeEventListener(EVENTS.AUTH_LOGOUT, handleAuthLogout);
     };
   }, [queryClient]);
 
@@ -141,10 +172,7 @@ export const useAuth = () => {
     queryFn: () => {
       if (typeof window === "undefined") return null;
 
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('token='))
-        ?.split('=')[1];
+      const token = getTokenFromCookie();
 
       return {
         isAuthenticated: !!token,
@@ -152,14 +180,14 @@ export const useAuth = () => {
       };
     },
     enabled: isClient,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: QUERY_CONFIG.STALE_TIME,
+    gcTime: QUERY_CONFIG.GC_TIME,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 };
 
-export const useAuthGuard = (redirectTo: string = "/login") => {
+export const useAuthGuard = (redirectTo: string = ROUTES.LOGIN) => {
   const { isAuthenticated, isLoading, isClient } = useAuthStatus();
   const router = useRouter();
 
@@ -176,7 +204,7 @@ export const useAuthGuard = (redirectTo: string = "/login") => {
   };
 };
 
-export const useAuthGuardQuery = (redirectTo: string = "/login") => {
+export const useAuthGuardQuery = (redirectTo: string = ROUTES.LOGIN) => {
   const { data, isLoading, isError } = useAuth();
   const router = useRouter();
 
