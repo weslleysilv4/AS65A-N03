@@ -12,7 +12,11 @@ import * as newsService from './news.service';
  * @example
  * GET /api/news?page=1&limit=10
  */
-export const getPublishedNewsHandler: RequestHandler = async (req, res, next) => {
+export const getPublishedNewsHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { page, limit, search } = req.query;
     const result = await newsService.getPublishedNews({
@@ -40,7 +44,11 @@ export const getPublishedNewsHandler: RequestHandler = async (req, res, next) =>
  * @example
  * GET /api/news/uuid
  */
-export const getPublishedNewsByIdHandler: RequestHandler = async (req, res, next) => {
+export const getPublishedNewsByIdHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { id } = req.params;
     const news = await newsService.getPublishedNewsById(id);
@@ -51,4 +59,29 @@ export const getPublishedNewsByIdHandler: RequestHandler = async (req, res, next
   } catch (error) {
     next(error);
   }
-}; 
+};
+
+/**
+ * Handler para registrar uma visualização de uma notícia.
+ *
+ * @route POST /api/news/:id/view
+ * @param {string} id - ID da notícia
+ * @returns {204} Visualização registrada com sucesso
+ * @throws {404} Se a notícia não existir
+ *
+ * @example
+ * POST /api/news/uuid/view
+ */
+export const registerNewsViewHandler: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const { id } = req.params;
+    await newsService.incrementNewsViewCount(id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};

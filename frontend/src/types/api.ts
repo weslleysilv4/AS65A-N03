@@ -20,10 +20,10 @@ export interface AuthUser {
   id: string;
   email: string;
   name?: string;
-  role?: "ADMIN" | "PUBLISHER";
+  role?: 'ADMIN' | 'PUBLISHER';
   user_metadata?: {
     name?: string;
-    role?: "ADMIN" | "PUBLISHER";
+    role?: 'ADMIN' | 'PUBLISHER';
   };
 }
 
@@ -65,7 +65,7 @@ export interface MediaItem {
   description?: string;
   caption?: string;
   copyright?: string;
-  type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+  type: 'IMAGE' | 'VIDEO' | 'EXTERNAL_LINK';
   order: number;
   createdAt: string;
 }
@@ -75,14 +75,18 @@ export interface NewsItem {
   title: string;
   text: string;
   authorId: string;
+  author: {
+    id: string;
+    name: string;
+  };
   revisorId?: string;
+  imageUrl?: string;
   categoryIds?: string[];
   categories?: NewsCategory[];
   media?: MediaItem[];
-  imageUrl?: string;
   publishedAt?: string;
   expirationDate?: string;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "ARCHIVED";
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
   published: boolean;
   tagsKeywords?: string[];
   viewCount?: number;
@@ -109,12 +113,12 @@ export interface UpdateNewsRequest extends Partial<CreateNewsRequest> {
 
 export interface PendingChange {
   id: string;
-  type: "CREATE" | "UPDATE";
+  type: 'CREATE' | 'UPDATE';
   authorId: string;
   reviewerId?: string;
   newsId?: string;
   content: Record<string, unknown>;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -128,22 +132,22 @@ export interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  role?: "ADMIN" | "PUBLISHER";
+  role?: 'ADMIN' | 'PUBLISHER';
 }
 
 export interface UpdateUserRequest {
   name?: string;
-  role?: "ADMIN" | "PUBLISHER";
+  role?: 'ADMIN' | 'PUBLISHER';
 }
 
 export interface ApproveChangeRequest {
-  status: "APPROVED" | "REJECTED";
+  status: 'APPROVED' | 'REJECTED';
   rejectionReason?: string;
 }
 
 // Publisher interfaces for pending changes
 export interface CreateChangeRequest {
-  type: "CREATE";
+  type: 'CREATE';
   content: {
     title: string;
     text: string;
@@ -159,14 +163,14 @@ export interface CreateChangeRequest {
       description?: string;
       caption?: string;
       copyright?: string;
-      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      type: 'IMAGE' | 'VIDEO' | 'EXTERNAL_LINK';
       order: number;
     }[];
   };
 }
 
 export interface UpdateChangeRequest {
-  type: "UPDATE";
+  type: 'UPDATE';
   newsId: string;
   content: {
     title?: string;
@@ -183,7 +187,7 @@ export interface UpdateChangeRequest {
       description?: string;
       caption?: string;
       copyright?: string;
-      type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
+      type: 'IMAGE' | 'VIDEO' | 'EXTERNAL_LINK';
       order: number;
     }[];
   };
