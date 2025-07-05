@@ -36,6 +36,11 @@ Desenvolvido em **Node.js**, com **TypeScript** e **Prisma ORM**, seguindo princ
 | dotenv        | 16.5.0     | https://github.com/motdotla/dotenv |
 | CORS          | 2.8.5      | https://github.com/expressjs/cors   |
 | Lodash        | 4.17.21    | https://lodash.com                  |
+| Supabase      | 2.50.1     | https://supabase.com                |
+| Multer        | 2.0.1      | https://github.com/expressjs/multer |
+| CSV Parser    | 3.2.0      | https://github.com/mafintosh/csv-parser |
+| JSON2CSV      | 6.0.0      | https://github.com/zemirco/json2csv |
+| Supertest     | 7.1.1      | https://github.com/visionmedia/supertest |
 
 ---
 
@@ -45,12 +50,22 @@ Desenvolvido em **Node.js**, com **TypeScript** e **Prisma ORM**, seguindo princ
 backend/
 ├── prisma/              # Schema do banco e seeds
 ├── src/
-│   ├── controllers/     # Lógica de rotas
-│   ├── routes/          # Definição de rotas Express
-│   ├── middlewares/     # JWT, validações e controle de acesso
-│   ├── services/        # Lógica de negócio
-│   ├── utils/           # Funções auxiliares
-│   └── jobs/            # Tarefas agendadas com node-cron
+│   ├── @types/          # Definições de tipos TypeScript
+│   ├── modules/         # Módulos organizados por funcionalidade
+│   │   ├── admin/       # Funcionalidades administrativas
+│   │   ├── auth/        # Autenticação e autorização
+│   │   ├── categories/  # Gerenciamento de categorias
+│   │   ├── news/        # Gerenciamento de notícias
+│   │   ├── publisher/   # Funcionalidades do publicador
+│   │   └── stats/       # Estatísticas e relatórios
+│   ├── shared/          # Recursos compartilhados
+│   │   ├── errors/      # Classes de erro personalizadas
+│   │   ├── jobs/        # Tarefas agendadas com node-cron
+│   │   ├── lib/         # Bibliotecas e configurações
+│   │   └── middleware/  # Middlewares Express
+│   ├── app.ts           # Configuração da aplicação
+│   ├── routes.ts        # Definição de rotas principais
+│   └── server.ts        # Servidor Express
 ├── .env.example         # Variáveis de ambiente (modelo)
 ├── package.json
 └── README.md
@@ -65,7 +80,9 @@ Crie um arquivo `.env` com base no `.env.example`. Exemplo:
 ```env
 DATABASE_URL="postgresql://postgres:sua_senha@localhost:5432/ellp_news"
 PORT=3000
-JWT_SECRET=chave_secreta_segura_com_32+_caracteres
+SUPABASE_PASSWORD=senha_de_acesso_ao_supabase
+SUPABASE_SERVICE_ROLE_KEY=chave_secreta_usada_pelo_supabase
+SUPABASE_URL=endereco_url_do_supabase
 ```
 
 ---
@@ -112,12 +129,15 @@ npx prisma studio   # Interface visual para o banco
 ## 🛠️ Comandos úteis
 
 ```bash
-npx prisma migrate dev       # Rodar migrações
-npx prisma migrate reset     # Resetar banco
-npx prisma migrate deploy    # Produção
-npx prisma generate          # Gerar cliente Prisma
-npx prisma studio            # Interface visual
-npm test                     # Testes unitários
+npm run dev                  # Executar em modo desenvolvimento
+npm run build               # Compilar TypeScript
+npm test                    # Executar testes unitários
+npm run seed                # Executar seed do banco de dados
+npx prisma migrate dev      # Rodar migrações
+npx prisma migrate reset    # Resetar banco
+npx prisma migrate deploy   # Produção
+npx prisma generate         # Gerar cliente Prisma
+npx prisma studio           # Interface visual
 ```
 
 ---
