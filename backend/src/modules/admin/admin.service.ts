@@ -1,8 +1,13 @@
-import { Prisma, User } from "@prisma/client";
-import prisma from "../../shared/lib/prisma";
-import { InternalServerError } from "../../shared/errors/InternalServerError";
-import { NotFoundError } from "../../shared/errors/NotFoundError";
-import { supabase } from "../../shared/lib/supabase";
+import * as publisherService from '../publisher/publisher.service';
+import { Prisma, User } from '@prisma/client';
+import prisma from '../../shared/lib/prisma';
+import { InternalServerError } from '../../shared/errors/InternalServerError';
+import { NotFoundError } from '../../shared/errors/NotFoundError';
+import { supabase } from '../../shared/lib/supabase';
+import { Parser } from 'json2csv';
+import { Readable } from 'stream';
+import { createNewsSchema } from '../publisher/publisher.schemas';
+import csvParser from 'csv-parser';
 
 /**
  * Creates a new user in the system.
@@ -30,7 +35,7 @@ export const createNewUser = async (
   });
 
   if (error) {
-    throw new InternalServerError(error, "Erro ao criar usuário");
+    throw new InternalServerError(error, 'Erro ao criar usuário');
   }
 
   return data.user;
@@ -52,17 +57,17 @@ export const getAllUsers = async () => {
     const { data, error } = await supabase.auth.admin.listUsers();
 
     if (error) {
-      throw new InternalServerError(error, "Erro ao buscar usuários");
+      throw new InternalServerError(error, 'Erro ao buscar usuários');
     }
 
     return data.users.map((user) => ({
       id: user.id,
       email: user.email,
       name: user.user_metadata?.name,
-      role: user.user_metadata?.role || "PUBLISHER",
+      role: user.user_metadata?.role || 'PUBLISHER',
     }));
   } catch (error) {
-    throw new InternalServerError(error as Error, "Erro ao buscar usuários");
+    throw new InternalServerError(error as Error, 'Erro ao buscar usuários');
   }
 };
 
@@ -94,13 +99,13 @@ export const updateUserRole = async (
     });
 
     if (error) {
-      throw new InternalServerError(error, "Erro ao atualizar usuário");
+      throw new InternalServerError(error, 'Erro ao atualizar usuário');
     }
 
     if (!data.user) {
       throw new InternalServerError(
-        new Error("Usuário não encontrado"),
-        "Usuário não encontrado"
+        new Error('Usuário não encontrado'),
+        'Usuário não encontrado'
       );
     }
 
@@ -108,10 +113,10 @@ export const updateUserRole = async (
       id: data.user.id,
       email: data.user.email,
       name: data.user.user_metadata?.name,
-      role: data.user.user_metadata?.role || "PUBLISHER",
+      role: data.user.user_metadata?.role || 'PUBLISHER',
     };
   } catch (error) {
-    throw new InternalServerError(error as Error, "Erro ao atualizar usuário");
+    throw new InternalServerError(error as Error, 'Erro ao atualizar usuário');
   }
 };
 
@@ -129,7 +134,7 @@ export const updateUserRole = async (
 export const getPendingChanges = async () => {
   const pendingChanges = await prisma.pendingChange.findMany({
     where: {
-      status: "PENDING",
+      status: 'PENDING',
     },
     include: {
       author: {
@@ -148,12 +153,12 @@ export const getPendingChanges = async () => {
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
   });
 
   if (!pendingChanges || pendingChanges.length === 0) {
-    throw new NotFoundError("pendingChanges");
+    throw new NotFoundError('pendingChanges');
   }
 
   return pendingChanges;
@@ -185,13 +190,13 @@ export const approveChange = async (
   });
 
   if (!pendingChange) {
-    throw new NotFoundError("pendingChanges");
+    throw new NotFoundError('pendingChanges');
   }
 
-  if (pendingChange.status !== "PENDING") {
+  if (pendingChange.status !== 'PENDING') {
     throw new InternalServerError(
       new Error(),
-      "Apenas mudanças pendentes podem ser aprovadas"
+      'Apenas mudanças pendentes podem ser aprovadas'
     );
   }
 
@@ -202,7 +207,7 @@ export const approveChange = async (
   if (!reviewer) {
     throw new InternalServerError(
       new Error(),
-      "Usuário revisor não encontrado no sistema"
+      'Usuário revisor não encontrado no sistema'
     );
   }
 
@@ -211,14 +216,14 @@ export const approveChange = async (
     const updatedChange = await prisma.pendingChange.update({
       where: { id: changeId },
       data: {
-        status: "APPROVED",
+        status: 'APPROVED',
         reviewerId: reviewer.id,
         updatedAt: new Date(),
       },
     });
 
     // Execute the change based on type
-    if (pendingChange.type === "CREATE") {
+    if (pendingChange.type === 'CREATE') {
       const newsData = pendingChange.content as any;
       let validCategoryIds: string[] = [];
       if (newsData.categoryIds && newsData.categoryIds.length > 0) {
@@ -236,7 +241,7 @@ export const approveChange = async (
           expirationDate: newsData.expirationDate
             ? new Date(newsData.expirationDate)
             : null,
-          status: "APPROVED",
+          status: 'APPROVED',
           published: true,
           publishedAt: new Date(),
           authorId: pendingChange.authorId,
@@ -273,7 +278,7 @@ export const approveChange = async (
       });
 
       return { ...updatedChange, createdNews: newNews };
-    } else if (pendingChange.type === "UPDATE") {
+    } else if (pendingChange.type === 'UPDATE') {
       const newsData = pendingChange.content as any;
 
       let validCategoryIds: string[] = [];
@@ -293,7 +298,7 @@ export const approveChange = async (
           expirationDate: newsData.expirationDate
             ? new Date(newsData.expirationDate)
             : null,
-          status: "APPROVED",
+          status: 'APPROVED',
           revisorId: reviewer.id,
           revisionDate: new Date(),
           published:
@@ -322,7 +327,7 @@ export const approveChange = async (
 
     return updatedChange;
   } catch (error) {
-    throw new InternalServerError(error as Error, "Falha ao aprovar a mudança");
+    throw new InternalServerError(error as Error, 'Falha ao aprovar a mudança');
   }
 };
 
@@ -351,13 +356,13 @@ export const rejectChange = async (
   });
 
   if (!pendingChange) {
-    throw new NotFoundError("pendingChanges");
+    throw new NotFoundError('pendingChanges');
   }
 
-  if (pendingChange.status !== "PENDING") {
+  if (pendingChange.status !== 'PENDING') {
     throw new InternalServerError(
       new Error(),
-      "Apenas mudanças pendentes podem ser rejeitadas"
+      'Apenas mudanças pendentes podem ser rejeitadas'
     );
   }
 
@@ -368,7 +373,7 @@ export const rejectChange = async (
   if (!reviewer) {
     throw new InternalServerError(
       new Error(),
-      "Usuário revisor não encontrado no sistema"
+      'Usuário revisor não encontrado no sistema'
     );
   }
 
@@ -376,7 +381,7 @@ export const rejectChange = async (
     const rejectedChange = await prisma.pendingChange.update({
       where: { id: changeId },
       data: {
-        status: "REJECTED",
+        status: 'REJECTED',
         rejectionReason,
         reviewerId: reviewer.id,
         updatedAt: new Date(),
@@ -387,7 +392,7 @@ export const rejectChange = async (
   } catch (error) {
     throw new InternalServerError(
       error as Error,
-      "Falha ao rejeitar a mudança"
+      'Falha ao rejeitar a mudança'
     );
   }
 };
@@ -447,12 +452,12 @@ export const getAllNews = async (filters?: {
         },
         media: {
           orderBy: {
-            order: "asc",
+            order: 'asc',
           },
         },
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
       skip,
       take: limit,
@@ -461,7 +466,7 @@ export const getAllNews = async (filters?: {
   ]);
 
   if (!news || news.length === 0) {
-    throw new NotFoundError("news");
+    throw new NotFoundError('news');
   }
 
   return {
@@ -500,7 +505,7 @@ export const updateNewsDirectly = async (
   });
 
   if (!existingNews) {
-    throw new NotFoundError("news");
+    throw new NotFoundError('news');
   }
 
   // Find the admin user by email
@@ -511,7 +516,7 @@ export const updateNewsDirectly = async (
   if (!admin) {
     throw new InternalServerError(
       new Error(),
-      "Usuário administrador não encontrado no sistema"
+      'Usuário administrador não encontrado no sistema'
     );
   }
 
@@ -548,7 +553,7 @@ export const updateNewsDirectly = async (
       if (existingCategories.length !== newsData.categoryIds.length) {
         throw new InternalServerError(
           new Error(),
-          "Uma ou mais categorias não foram encontradas"
+          'Uma ou mais categorias não foram encontradas'
         );
       }
 
@@ -584,7 +589,7 @@ export const updateNewsDirectly = async (
         },
         media: {
           orderBy: {
-            order: "asc",
+            order: 'asc',
           },
         },
       },
@@ -594,7 +599,160 @@ export const updateNewsDirectly = async (
   } catch (error) {
     throw new InternalServerError(
       error as Error,
-      "Falha ao atualizar a notícia"
+      'Falha ao atualizar a notícia'
     );
   }
+};
+
+/**
+ * Exporta os dados das notícias em formato JSON ou CSV.
+ *
+ * @param {string} format - O formato de exportação ('json' ou 'csv')
+ * @returns {Promise<Object>} Retorna um objeto com o conteúdo exportado e os metadados
+ * @throws {InternalServerError} Lança um erro se a exportação falhar
+ *
+ * @example
+ * ```typescript
+ * const exportData = await exportNewsData('json');
+ * ```
+ */
+export const exportNewsData = async (format: 'json' | 'csv') => {
+  const news = await prisma.news.findMany({
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      revisor: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      media: {
+        select: {
+          id: true,
+          url: true,
+          path: true,
+          alt: true,
+          title: true,
+        },
+      },
+      categories: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const flattenedData = news.map((n) => ({
+    id: n.id,
+    title: n.title,
+    status: n.status,
+    published: n.published,
+    viewCount: n.viewCount,
+    authorName: n.author.name,
+    authorEmail: n.author.email,
+    revisorName: n.revisor?.name,
+    revisorEmail: n.revisor?.email,
+    categories: n.categories.map((c) => c.name).join(', '),
+    tags: n.tagsKeywords.join(', '),
+    createdAt: n.createdAt.toISOString(),
+    publishedAt: n.publishedAt?.toISOString(),
+    expirationDate: n.expirationDate?.toISOString(),
+    text: n.text,
+    media: n.media.map((m) => ({
+      id: m.id,
+      url: m.url,
+      path: m.path,
+      alt: m.alt,
+      title: m.title,
+    })),
+  }));
+
+  if (format === 'csv') {
+    const json2csvParser = new Parser();
+    const csv = json2csvParser.parse(flattenedData);
+    return {
+      fileContent: csv,
+      contentType: 'text/csv',
+      fileName: 'news_export.csv',
+    };
+  }
+
+  return {
+    fileContent: JSON.stringify(flattenedData, null, 2),
+    contentType: 'application/json',
+    fileName: 'news_export.json',
+  };
+};
+
+/**
+ * Importa notícias de um arquivo CSV.
+ *
+ * @param {Buffer} fileBuffer - O buffer do arquivo CSV
+ * @param {string} authorId - O ID do autor das notícias
+ * @returns {Promise<Object>} Retorna um objeto com as estatísticas da importação
+ * @throws {InternalServerError} Lança um erro se a importação falhar
+ *
+ * @example
+ * ```typescript
+ * const importStats = await importNewsFromCSV(fileBuffer, 'author-123');
+ * ```
+ */
+export const importNewsFromCSV = async (
+  fileBuffer: Buffer,
+  authorId: string
+) => {
+  const results: any[] = [];
+  const errors: { row: number; errors: any }[] = [];
+  let rowCount = 0;
+
+  await new Promise<void>((resolve, reject) => {
+    const stream = Readable.from(fileBuffer).pipe(csvParser());
+
+    stream.on('data', (data) => {
+      rowCount++;
+      const validationResult = createNewsSchema.shape.body.safeParse(data);
+
+      if (validationResult.success) {
+        results.push(validationResult.data);
+      } else {
+        errors.push({
+          row: rowCount,
+          errors: validationResult.error.flatten().fieldErrors,
+        });
+      }
+
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+  });
+
+  let successfulImports = 0;
+  for (const newsData of results) {
+    try {
+      await publisherService.requestNewsCreation(authorId, newsData);
+      successfulImports++;
+    } catch (error) {
+      errors.push({
+        row: -1,
+        errors: { general: 'Falha ao salvar no banco de dados.' },
+      });
+    }
+  }
+
+  return {
+    totalRows: rowCount,
+    successfulImports,
+    failedImports: errors.length,
+    errors,
+  };
 };
