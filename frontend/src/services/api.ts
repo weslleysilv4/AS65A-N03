@@ -4,7 +4,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
   AxiosError,
-} from "axios";
+} from 'axios';
 import type {
   ApiResponse,
   BackendAuthResponse,
@@ -23,27 +23,27 @@ import type {
   ApproveChangeRequest,
   CreateUserRequest,
   UpdateUserRequest,
-} from "@/types/api";
+} from '@/types/api';
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = 'http://localhost:3000/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
   timeout: 10000,
 });
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("token="))
-        ?.split("=")[1];
+        .split('; ')
+        .find((row) => row.startsWith('token='))
+        ?.split('=')[1];
 
       if (token) {
         config.headers = config.headers || {};
@@ -63,19 +63,19 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       if (error.response?.status === 401) {
         document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.dispatchEvent(new CustomEvent("auth-logout"));
+          'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        window.dispatchEvent(new CustomEvent('auth-logout'));
 
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
         }
       }
 
       if (error.response?.status === 403) {
-        console.error("Acesso negado. Você não tem permissão para esta ação.");
+        console.error('Acesso negado. Você não tem permissão para esta ação.');
       }
     }
 
@@ -127,7 +127,7 @@ export const del = async <T = unknown>(
 };
 
 export const setAuthToken = (token: string) => {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     document.cookie = `token=${token}; path=/; max-age=${
       7 * 24 * 60 * 60
     }; SameSite=Lax`;
@@ -135,17 +135,17 @@ export const setAuthToken = (token: string) => {
 };
 
 export const removeAuthToken = () => {
-  if (typeof window !== "undefined") {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  if (typeof window !== 'undefined') {
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
 };
 
 export const isAuthenticated = (): boolean => {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("token="))
-      ?.split("=")[1];
+      .split('; ')
+      .find((row) => row.startsWith('token='))
+      ?.split('=')[1];
     return !!token;
   }
   return false;
@@ -154,26 +154,26 @@ export const isAuthenticated = (): boolean => {
 export const login = async (
   credentials: LoginRequest
 ): Promise<BackendAuthResponse> => {
-  const response = await post<BackendAuthResponse>("/auth/login", credentials);
+  const response = await post<BackendAuthResponse>('/auth/login', credentials);
   return response;
 };
 
 export const register = async (
   userData: RegisterRequest
 ): Promise<ApiResponse> => {
-  return post<ApiResponse>("/auth/register", userData);
+  return post<ApiResponse>('/auth/register', userData);
 };
 
 export const logout = async (): Promise<void> => {
   try {
-    await post("/auth/logout");
+    await post('/auth/logout');
   } catch (error) {
-    console.warn("Erro ao fazer logout no servidor:", error);
+    console.warn('Erro ao fazer logout no servidor:', error);
   } finally {
     removeAuthToken();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("auth-logout"));
-      window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth-logout'));
+      window.location.href = '/login';
     }
   }
 };
@@ -189,20 +189,20 @@ export const getPublicNews = async (params?: {
 }): Promise<NewsItem[]> => {
   try {
     const searchParams = new URLSearchParams();
-    if (params?.search) searchParams.append("search", params.search);
-    if (params?.category) searchParams.append("category", params.category);
-    if (params?.limit) searchParams.append("limit", params.limit.toString());
-    if (params?.offset) searchParams.append("offset", params.offset.toString());
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.offset) searchParams.append('offset', params.offset.toString());
 
     const url = `/news${
-      searchParams.toString() ? `?${searchParams.toString()}` : ""
+      searchParams.toString() ? `?${searchParams.toString()}` : ''
     }`;
     const response = await get<{
       data: { news: NewsItem[]; pagination: number };
     }>(url);
     return Array.isArray(response.data.news) ? response.data.news : [];
   } catch (error) {
-    console.error("Erro ao buscar notícias públicas:", error);
+    console.error('Erro ao buscar notícias públicas:', error);
     return [];
   }
 };
@@ -212,13 +212,18 @@ export const getPublicNewsById = async (id: string): Promise<NewsItem> => {
   return response.data;
 };
 
+// Registra a visualização de uma notícia publicada
+export const registerNewsView = async (id: string): Promise<void> => {
+  await post<void>(`/news/${id}/view`);
+};
+
 // Publisher news endpoints
 export const getPublisherNews = async (): Promise<NewsItem[]> => {
   try {
-    const response = await get<{ data: NewsItem[] }>("/publisher/news");
+    const response = await get<{ data: NewsItem[] }>('/publisher/news');
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error("Erro ao buscar notícias do publisher:", error);
+    console.error('Erro ao buscar notícias do publisher:', error);
     return [];
   }
 };
@@ -227,10 +232,10 @@ export const getPublisherPendingChanges = async (): Promise<
   PendingChange[]
 > => {
   try {
-    const response = await get<{ data: PendingChange[] }>("/publisher/changes");
+    const response = await get<{ data: PendingChange[] }>('/publisher/changes');
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error("Erro ao buscar mudanças pendentes do publisher:", error);
+    console.error('Erro ao buscar mudanças pendentes do publisher:', error);
     return [];
   }
 };
@@ -238,7 +243,7 @@ export const getPublisherPendingChanges = async (): Promise<
 export const createPendingChange = async (
   changeData: CreateChangeRequest
 ): Promise<ApiResponse<PendingChange>> => {
-  return post<ApiResponse<PendingChange>>("/publisher/changes", changeData);
+  return post<ApiResponse<PendingChange>>('/publisher/changes', changeData);
 };
 
 export const updatePendingChange = async (
@@ -263,12 +268,12 @@ export const getAdminNews = async (): Promise<NewsItem[]> => {
           pages: number;
         };
       };
-    }>("/admin/news");
+    }>('/admin/news');
 
     // Garantir que sempre retorna um array
     return Array.isArray(response.data.news) ? response.data.news : [];
   } catch (error) {
-    console.error("Erro ao buscar notícias admin:", error);
+    console.error('Erro ao buscar notícias admin:', error);
     return [];
   }
 };
@@ -281,23 +286,23 @@ export const updateAdminNews = async (
 };
 
 export const deleteNews = async (id: string): Promise<ApiResponse> => {
-  return updateAdminNews(id, { status: "ARCHIVED" });
+  return updateAdminNews(id, { status: 'ARCHIVED' });
 };
 
 export const archiveNews = async (
   id: string
 ): Promise<ApiResponse<NewsItem>> => {
-  return updateAdminNews(id, { status: "ARCHIVED", published: false });
+  return updateAdminNews(id, { status: 'ARCHIVED', published: false });
 };
 
 export const getAdminPendingChanges = async (): Promise<PendingChange[]> => {
   try {
     const response = await get<{ data: PendingChange[] }>(
-      "/admin/changes/pending"
+      '/admin/changes/pending'
     );
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error("Erro ao buscar mudanças pendentes:", error);
+    console.error('Erro ao buscar mudanças pendentes:', error);
     return [];
   }
 };
@@ -319,11 +324,11 @@ export const rejectChange = async (
 export const createAdminUser = async (
   userData: CreateUserRequest
 ): Promise<ApiResponse<AuthUser>> => {
-  return post<ApiResponse<AuthUser>>("/admin/users", userData);
+  return post<ApiResponse<AuthUser>>('/admin/users', userData);
 };
 
 export const getAdminUsers = async (): Promise<AuthUser[]> => {
-  const response = await get<{ users: AuthUser[] }>("/admin/users");
+  const response = await get<{ users: AuthUser[] }>('/admin/users');
   return response.users;
 };
 
@@ -337,14 +342,14 @@ export const updateAdminUser = async (
 // ============ CATEGORY OPERATIONS ============
 
 export const getCategories = async (): Promise<NewsCategory[]> => {
-  const response = await get<{ categories: NewsCategory[] }>("/categories");
+  const response = await get<{ categories: NewsCategory[] }>('/categories');
   return response.categories;
 };
 
 export const createCategory = async (
   categoryData: CreateCategoryRequest
 ): Promise<ApiResponse<NewsCategory>> => {
-  return post<ApiResponse<NewsCategory>>("/categories", categoryData);
+  return post<ApiResponse<NewsCategory>>('/categories', categoryData);
 };
 
 export const updateCategory = async (
@@ -361,12 +366,12 @@ export const deleteCategory = async (id: string): Promise<ApiResponse> => {
 // ============ STATS OPERATIONS ============
 
 export const getNewsStats = async (): Promise<NewsStats> => {
-  const response = await get<{ data: NewsStats }>("/stats/news");
+  const response = await get<{ data: NewsStats }>('/stats/news');
   return response.data;
 };
 
 export const getCategoryStats = async (): Promise<CategoryStats> => {
-  const response = await get<{ data: CategoryStats }>("/stats/categories");
+  const response = await get<{ data: CategoryStats }>('/stats/categories');
   return response.data;
 };
 

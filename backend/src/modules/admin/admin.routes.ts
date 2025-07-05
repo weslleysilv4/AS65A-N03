@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   getPendingChangesHandler,
   approveChangeHandler,
@@ -8,77 +8,95 @@ import {
   createUserHandler,
   getAllUsersHandler,
   updateUserHandler,
-} from "./admin.controller";
-import { authMiddleware } from "../../shared/middleware/auth.middleware";
-import { roleMiddleware } from "../../shared/middleware/roles.middleware";
-import { validate } from "../../shared/middleware/validate.middleware";
+  exportDataHandler,
+  importNewsCSVHandler,
+} from './admin.controller';
+import { authMiddleware } from '../../shared/middleware/auth.middleware';
+import { roleMiddleware } from '../../shared/middleware/roles.middleware';
+import { validate } from '../../shared/middleware/validate.middleware';
 import {
   rejectChangeSchema,
   updateNewsSchema,
   listNewsQuerySchema,
-} from "./admin.schemas";
+} from './admin.schemas';
+import upload from '../../shared/middleware/upload.middleware';
 
 const router = Router();
 
 router.post(
-  "/users",
+  '/users',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   createUserHandler
 );
 
 router.get(
-  "/users",
+  '/users',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   getAllUsersHandler
 );
 
 router.put(
-  "/users/:id",
+  '/users/:id',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   updateUserHandler
 );
 
 // Rotas para gerenciamento de mudanças pendentes
 router.get(
-  "/changes/pending",
+  '/changes/pending',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   getPendingChangesHandler
 );
 
 router.post(
-  "/changes/:id/approve",
+  '/changes/:id/approve',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   approveChangeHandler
 );
 
 router.post(
-  "/changes/:id/reject",
+  '/changes/:id/reject',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   validate(rejectChangeSchema),
   rejectChangeHandler
 );
 
 // Rotas para gerenciamento de notícias
 router.get(
-  "/news",
+  '/news',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   validate(listNewsQuerySchema),
   getAllNewsHandler
 );
 
 router.put(
-  "/news/:id",
+  '/news/:id',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   validate(updateNewsSchema),
   updateNewsDirectlyHandler
+);
+
+router.get(
+  '/news/export',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  exportDataHandler
+);
+
+router.post(
+  '/news/import',
+  authMiddleware,
+  roleMiddleware(['ADMIN']),
+  upload.single('newsFile'),
+  importNewsCSVHandler
 );
 
 export default router;

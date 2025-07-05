@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
-import { Calendar, User, ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import PublicHeader from "@/components/PublicHeader";
-import PublicNewsCard from "@/components/PublicNewsCard";
-import { usePublicNewsById, usePublicNews } from "@/hooks/useNews";
-import { formatDate } from "@/utils/format";
-import Loading from "@/components/Loading";
-import Link from "next/link";
-import Image from "next/image";
-import type { NewsItem } from "@/types/api";
+import { useParams } from 'next/navigation';
+import { Calendar, User, ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import PublicHeader from '@/components/PublicHeader';
+import PublicNewsCard from '@/components/PublicNewsCard';
+import { usePublicNewsById, usePublicNews } from '@/hooks/useNews';
+import { formatDate } from '@/utils/format';
+import Loading from '@/components/Loading';
+import Link from 'next/link';
+import Image from 'next/image';
+import type { NewsItem } from '@/types/api';
+import { useEffect } from 'react';
+import { registerNewsView } from '@/services/api';
 
 export default function NewsDetailPage() {
   const params = useParams();
@@ -21,13 +23,34 @@ export default function NewsDetailPage() {
   const { data: news, isLoading, error } = usePublicNewsById(newsId);
   const { data: publicNews = [] } = usePublicNews();
 
+  // Registra a visualização da notícia apenas uma vez por sessão
+  useEffect(() => {
+    if (!newsId) return;
+    if (typeof window === 'undefined') return;
+
+    const STORAGE_KEY = 'viewedNewsIds';
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    const viewedIds: string[] = stored ? JSON.parse(stored) : [];
+
+    if (!viewedIds.includes(newsId)) {
+      registerNewsView(newsId).catch((err) => {
+        console.error('Erro ao registrar visualização da notícia:', err);
+      });
+
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify([...viewedIds, newsId])
+      );
+    }
+  }, [newsId]);
+
   // Filtrar notícias relacionadas (mesmo categoria, excluindo a atual)
   const relatedNews = Array.isArray(publicNews)
     ? publicNews
         .filter(
           (item: NewsItem) =>
             item.id !== newsId &&
-            item.status === "APPROVED" &&
+            item.status === 'APPROVED' &&
             item.published &&
             item.categories?.some((cat) =>
               news?.categories?.some((newsCat) => newsCat.id === cat.id)
@@ -38,11 +61,11 @@ export default function NewsDetailPage() {
 
   const getRandomGradient = () => {
     const gradients = [
-      "bg-gradient-to-br from-blue-500 to-purple-600",
-      "bg-gradient-to-br from-green-500 to-blue-600",
-      "bg-gradient-to-br from-purple-500 to-pink-600",
-      "bg-gradient-to-br from-orange-500 to-red-600",
-      "bg-gradient-to-br from-teal-500 to-cyan-600",
+      'bg-gradient-to-br from-blue-500 to-purple-600',
+      'bg-gradient-to-br from-green-500 to-blue-600',
+      'bg-gradient-to-br from-purple-500 to-pink-600',
+      'bg-gradient-to-br from-orange-500 to-red-600',
+      'bg-gradient-to-br from-teal-500 to-cyan-600',
     ];
     return gradients[Math.floor(Math.random() * gradients.length)];
   };
@@ -58,7 +81,7 @@ export default function NewsDetailPage() {
     );
   }
 
-  if (error || !news || news.status !== "APPROVED" || !news.published) {
+  if (error || !news || news.status !== 'APPROVED' || !news.published) {
     return (
       <div className="min-h-screen bg-gray-50">
         <PublicHeader />
@@ -116,7 +139,7 @@ export default function NewsDetailPage() {
 
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                <span>Author ID: {news.authorId}</span>
+                <span>Author: {news.author.name}</span>
               </div>
             </div>
 
