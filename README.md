@@ -77,8 +77,8 @@ O objetivo do sistema é permitir a **centralização e padronização da comuni
 | Componente          | Versão       | Link                                | Observações                                 |
 |---------------------|--------------|-------------------------------------|---------------------------------------------|
 | Node.js             | 20.x         | https://nodejs.org                  | Backend                                     |
-| Next.js             | 15.x         | https://nextjs.org                  | Framework React para o frontend             |
-| React               | 19.x         | https://react.dev                   | Biblioteca base do frontend                 |
+| Next.js             | 15.3.4       | https://nextjs.org                  | Framework React para o frontend             |
+| React               | 19.0.0       | https://react.dev                   | Biblioteca base do frontend                 |
 | PostgreSQL          | 15.x         | https://www.postgresql.org          | Banco de dados relacional                   |
 | Prisma ORM          | 6.8.2        | https://www.prisma.io               | ORM usado para acesso ao banco              |
 | TypeScript          | 5.x          | https://www.typescriptlang.org      | Tipagem estática para JS                    |
@@ -91,11 +91,18 @@ O objetivo do sistema é permitir a **centralização e padronização da comuni
 | Lucide React        | 0.525.0      | https://lucide.dev                  | Ícones para React                           |
 | Radix UI            | múltiplas    | https://www.radix-ui.com            | Componentes acessíveis                      |
 | Express             | 5.1.0        | https://expressjs.com               | Framework de rotas para Node.js             |
+| Supabase            | 2.50.1       | https://supabase.com                | Autenticação e armazenamento               |
+| Multer              | 2.0.1        | https://github.com/expressjs/multer | Upload de arquivos                         |
+| CSV Parser          | 3.2.0        | https://github.com/mafintosh/csv-parser | Processamento de arquivos CSV              |
+| JSON2CSV            | 6.0.0        | https://github.com/zemirco/json2csv | Conversão de dados                         |
+| Supertest           | 7.1.1        | https://github.com/visionmedia/supertest | Testes de integração                      |
 | dotenv              | 16.5.0       | https://github.com/motdotla/dotenv | Variáveis de ambiente                       |
 | cors                | 2.8.5        | https://github.com/expressjs/cors   | Middleware CORS                             |
 | node-cron           | 4.2.0        | https://github.com/node-cron/node-cron | Tarefas agendadas                         |
 | Jest                | 29.7.0       | https://jestjs.io                   | Framework de testes unitários               |
 | Lodash              | 4.17.21      | https://lodash.com                  | Utilitários para JS                         |
+| date-fns            | 4.1.0        | https://date-fns.org                | Manipulação de datas                        |
+| class-variance-authority | 0.7.1   | https://cva.style/docs              | Variantes de componentes                    |
 
 ---
 
@@ -112,6 +119,19 @@ git clone https://github.com/weslleysilv4/AS65A-N03.git
 cd AS65A-N03
 ```
 
+
+#### ⚙️ Variáveis de Ambiente
+
+Crie um arquivo `.env` com base no `.env.example` na raíz da pasta `backend`. Exemplo:
+
+```env
+DATABASE_URL="postgresql://postgres:sua_senha@localhost:5432/ellp_news"
+PORT=3000
+SUPABASE_PASSWORD="senha_de_acesso_ao_supabase"
+SUPABASE_SERVICE_ROLE_KEY="chave_secreta_usada_pelo_supabase"
+SUPABASE_URL="endereco_url_do_supabase"
+```
+
 ---
 
 #### 🧠 Backend (API e banco de dados)
@@ -120,16 +140,13 @@ cd AS65A-N03
 # 4. Acesse a pasta do backend
 cd backend
 
-# 5. Copie o arquivo de variáveis de ambiente
-cp .env.example .env
-
-# 6. Instale as dependências
+# 5. Instale as dependências
 npm install
 
-# 7. Crie e aplique as migrações do banco de dados
+# 6. Crie e aplique as migrações do banco de dados
 npx prisma migrate dev
 
-# 8. Rode o servidor em modo de desenvolvimento
+# 7. Rode o servidor em modo de desenvolvimento
 npm run dev
 
 # O backend estará disponível em http://localhost:3000
