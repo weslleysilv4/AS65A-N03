@@ -22,7 +22,6 @@ O objetivo do sistema é permitir a **centralização e padronização da comuni
 | Nome                     | RA      | Função           |
 | ------------------------ | ------- | ---------------- |
 | Diego Kiyoshi Otani      | 2575256 | Backend          |
-| Igor Luiz Ribeiro Santos | 2065894 | Frontend         |
 | Italo Pereira Ventura    | 2467259 | Frontend         |
 | Victor Gabriel Lucio     | 2575302 | Backend          |
 | Weslley Silva            | 2410257 | P.O / Integração |
