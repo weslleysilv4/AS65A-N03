@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCreatePendingChange } from "@/hooks/useNews";
 import { useErrorNotification } from "@/hooks/useErrorHandler";
+import { uploadFileAdmin } from "@/lib/supabaseStorageAdmin"; // Usando versão admin temporariamente
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -43,21 +45,15 @@ export default function CreateNewsForm() {
       copyright?: string;
       type: "IMAGE" | "VIDEO" | "EXTERNAL_LINK";
       order: number;
+      isUploading?: boolean;
     }[],
   });
 
   const [tagInput, setTagInput] = useState("");
   const [linkData, setLinkData] = useState({ url: "", text: "" });
-  const [mediaData, setMediaData] = useState({
-    url: "",
-    path: "",
-    alt: "",
-    title: "",
-    description: "",
-    caption: "",
-    copyright: "",
-    type: "IMAGE" as "IMAGE" | "VIDEO" | "EXTERNAL_LINK",
-  });
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<number>>(new Set());
+  const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
   const createChange = useCreatePendingChange();
   const { showSuccess, showError } = useErrorNotification();
 
@@ -74,19 +70,15 @@ export default function CreateNewsForm() {
     });
     setTagInput("");
     setLinkData({ url: "", text: "" });
-    setMediaData({
-      url: "",
-      path: "",
-      alt: "",
-      title: "",
-      description: "",
-      caption: "",
-      copyright: "",
-      type: "IMAGE",
-    });
+    setPreviewUrls([]);
+    setUploadingFiles(new Set());
+    setUploadErrors({});
   };
 
-  const updateFormData = (field: string, value: string | string[] | unknown[]) => {
+  const updateFormData = (
+    field: string,
+    value: string | string[] | unknown[]
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -96,20 +88,115 @@ export default function CreateNewsForm() {
     setLinkData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const resetMediaData = () =>
-    setMediaData({
-      url: "",
-      path: "",
-      alt: "",
-      title: "",
+  const processFiles = async (files: FileList) => {
+    const fileArray = Array.from(files);
+    
+    // Criar mídia inicial com URLs locais para preview
+    const newMedia = fileArray.map((file, index) => ({
+      url: URL.createObjectURL(file),
+      path: `/uploads/${file.name}`,
+      alt: `Imagem ${index + 1}`,
+      title: file.name.replace(/\.[^/.]+$/, ""), // Remove extensão
       description: "",
       caption: "",
       copyright: "",
-      type: "IMAGE",
-    });
+      type: file.type.startsWith("video/")
+        ? ("VIDEO" as const)
+        : ("IMAGE" as const),
+      order: formData.media.length + index + 1,
+      isUploading: true, // Flag para indicar que está fazendo upload
+    }));
 
-  const updateMediaData = (field: keyof typeof mediaData, value: string) => {
-    setMediaData((prev) => ({ ...prev, [field]: value }));
+    // Criar URLs de preview
+    const urls = fileArray.map((file) => URL.createObjectURL(file));
+    setPreviewUrls((prev) => [...prev, ...urls]);
+
+    // Adicionar à lista de mídia
+    const currentMediaLength = formData.media.length;
+    updateFormData("media", [...formData.media, ...newMedia]);
+
+    // Fazer upload de cada arquivo
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const mediaIndex = currentMediaLength + i;
+      
+      try {
+        // Marcar arquivo como fazendo upload
+        setUploadingFiles(prev => new Set(prev).add(mediaIndex));
+        
+        // Fazer upload para o Supabase Storage
+        const publicUrl = await uploadFileAdmin(file, 'news-media', 'images');
+        
+        // Atualizar o item da mídia com a URL real
+        setFormData(prev => ({
+          ...prev,
+          media: prev.media.map((mediaItem, index) => {
+            if (index === mediaIndex) {
+              return {
+                ...mediaItem,
+                url: publicUrl,
+                path: publicUrl,
+                isUploading: false,
+              };
+            }
+            return mediaItem;
+          })
+        }));
+        
+        // Remover da lista de uploads
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(mediaIndex);
+          return newSet;
+        });
+        
+        // Limpar erro se havia
+        setUploadErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[mediaIndex];
+          return newErrors;
+        });
+        
+      } catch (error) {
+        console.error(`Erro ao fazer upload do arquivo ${file.name}:`, error);
+        
+        // Marcar erro
+        setUploadErrors(prev => ({
+          ...prev,
+          [mediaIndex]: error instanceof Error ? error.message : 'Erro desconhecido no upload'
+        }));
+        
+        // Remover da lista de uploads
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(mediaIndex);
+          return newSet;
+        });
+        
+        // Marcar como não fazendo upload
+        setFormData(prev => ({
+          ...prev,
+          media: prev.media.map((mediaItem, index) => {
+            if (index === mediaIndex) {
+              return {
+                ...mediaItem,
+                isUploading: false,
+              };
+            }
+            return mediaItem;
+          })
+        }));
+        
+        showError(new Error(`Erro ao fazer upload de ${file.name}: ${error}`));
+      }
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
+    }
   };
 
   const isTagValid = (tag: string) =>
@@ -117,12 +204,12 @@ export default function CreateNewsForm() {
 
   const isLinkDataValid = () => linkData.url.trim() && linkData.text.trim();
 
-  const isMediaDataValid = () => mediaData.url.trim() && mediaData.path.trim();
-
   const hasExternalLinks = formData.externalLinks.length > 0;
   const hasTags = formData.tagsKeywords.length > 0;
   const hasMedia = formData.media.length > 0;
   const isFormSubmitting = createChange.isPending;
+  const hasUploadsPending = uploadingFiles.size > 0;
+  const hasUploadErrors = Object.keys(uploadErrors).length > 0;
 
   const addTag = () => {
     const trimmedTag = tagInput.trim();
@@ -156,21 +243,18 @@ export default function CreateNewsForm() {
     );
   };
 
-  const addMedia = () => {
-    if (isMediaDataValid()) {
-      updateFormData("media", [
-        ...formData.media,
-        { ...mediaData, order: formData.media.length + 1 },
-      ]);
-      resetMediaData();
-    }
-  };
-
   const removeMedia = (index: number) => {
+    // Limpar URL de preview se existir
+    if (previewUrls[index]) {
+      URL.revokeObjectURL(previewUrls[index]);
+    }
+
     updateFormData(
       "media",
       formData.media.filter((_, i) => i !== index)
     );
+
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const createChangeRequest = (): CreateChangeRequest => ({
@@ -184,12 +268,28 @@ export default function CreateNewsForm() {
         formData.tagsKeywords.length > 0 ? formData.tagsKeywords : undefined,
       publishedAt: formData.publishedAt || undefined,
       expirationDate: formData.expirationDate || undefined,
-      media: formData.media.length > 0 ? formData.media : undefined,
+      media: formData.media.length > 0 ? formData.media.map((mediaItem) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { isUploading, ...media } = mediaItem;
+        return media;
+      }) : undefined,
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Verificar se há uploads em andamento
+    if (hasUploadsPending) {
+      showError(new Error("Aguarde o upload de todos os arquivos ser concluído antes de publicar."));
+      return;
+    }
+
+    // Verificar se há erros de upload
+    if (hasUploadErrors) {
+      showError(new Error("Existem erros no upload de arquivos. Remova os arquivos com erro ou tente novamente."));
+      return;
+    }
 
     const changeRequest = createChangeRequest();
 
@@ -495,189 +595,109 @@ export default function CreateNewsForm() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaUrl"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        URL da Mídia
-                      </Label>
-                      <Input
-                        id="mediaUrl"
-                        type="url"
-                        value={mediaData.url}
-                        onChange={(e) => updateMediaData("url", e.target.value)}
-                        placeholder="https://exemplo.com/imagem.jpg"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaPath"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Caminho do Arquivo
-                      </Label>
-                      <Input
-                        id="mediaPath"
-                        value={mediaData.path}
-                        onChange={(e) => updateMediaData("path", e.target.value)}
-                        placeholder="/storage/images/imagem.jpg"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
+                <div className="space-y-6">
+                  <div className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+                    <Upload className="mx-auto h-12 w-12 text-purple-400 mb-4" />
+                    <Label htmlFor="media-files" className="cursor-pointer">
+                      <span className="text-lg font-semibold text-purple-700">
+                        Clique para selecionar arquivos
+                      </span>
+                      <p className="text-sm text-purple-600 mt-2">
+                        Suporte para imagens (PNG, JPG, JPEG, GIF) e vídeos
+                        (MP4, MOV, AVI)
+                      </p>
+                    </Label>
+                    <Input
+                      id="media-files"
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
                   </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaTitle"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Título da Mídia
-                      </Label>
-                      <Input
-                        id="mediaTitle"
-                        value={mediaData.title}
-                        onChange={(e) => updateMediaData("title", e.target.value)}
-                        placeholder="Título descritivo da mídia"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaAlt"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Texto Alternativo
-                      </Label>
-                      <Input
-                        id="mediaAlt"
-                        value={mediaData.alt}
-                        onChange={(e) => updateMediaData("alt", e.target.value)}
-                        placeholder="Descrição da imagem para acessibilidade"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaType"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Tipo de Mídia
-                      </Label>
-                      <select
-                        id="mediaType"
-                        value={mediaData.type}
-                        onChange={(e) =>
-                          updateMediaData("type", e.target.value)
-                        }
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 bg-white/80 w-full px-3"
-                      >
-                        <option value="IMAGE">Imagem</option>
-                        <option value="VIDEO">Vídeo</option>
-                        <option value="EXTERNAL_LINK">Link Externo</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaDescription"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Descrição
-                      </Label>
-                      <Input
-                        id="mediaDescription"
-                        value={mediaData.description}
-                        onChange={(e) => updateMediaData("description", e.target.value)}
-                        placeholder="Descrição detalhada da mídia"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaCaption"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Legenda
-                      </Label>
-                      <Input
-                        id="mediaCaption"
-                        value={mediaData.caption}
-                        onChange={(e) => updateMediaData("caption", e.target.value)}
-                        placeholder="Legenda da mídia"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="mediaCopyright"
-                        className="text-base font-semibold text-gray-700"
-                      >
-                        Copyright
-                      </Label>
-                      <Input
-                        id="mediaCopyright"
-                        value={mediaData.copyright}
-                        onChange={(e) => updateMediaData("copyright", e.target.value)}
-                        placeholder="Informações de copyright"
-                        className="h-12 rounded-xl border-gray-200 focus:border-purple-500 focus:ring-purple-500 shadow-sm bg-white/80"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    onClick={addMedia}
-                    size="sm"
-                    className="h-12 px-6 rounded-xl bg-purple-600 hover:bg-purple-700"
-                    disabled={!isMediaDataValid()}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Mídia
-                  </Button>
 
                   {hasMedia && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-gray-900">
-                        Mídia Adicionada:
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        Arquivos Selecionados ({formData.media.length})
                       </h4>
-                      {formData.media.map((media, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-4 bg-white/80 rounded-xl border border-purple-200 shadow-sm"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-purple-900">
-                              {media.title}
-                            </p>
-                            <p className="text-sm text-purple-600 break-all">
-                              {media.url}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMedia(index)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {formData.media.map((media, index) => (
+                          <div
+                            key={index}
+                            className="relative group bg-white/80 rounded-xl border border-purple-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                           >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center relative">
+                              {/* Indicador de upload */}
+                              {media.isUploading && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                                  <div className="text-white text-center">
+                                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                    <span className="text-sm">Enviando...</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Indicador de erro */}
+                              {uploadErrors[index] && (
+                                <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center z-10">
+                                  <div className="text-white text-center p-2">
+                                    <X className="w-8 h-8 mx-auto mb-2" />
+                                    <span className="text-xs">Erro no upload</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {media.type === "IMAGE" ? (
+                                <Image
+                                  src={media.url}
+                                  alt={
+                                    media.alt ||
+                                    media.title ||
+                                    "Imagem da notícia"
+                                  }
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                              ) : (
+                                <div className="text-purple-600 text-center">
+                                  <Upload className="mx-auto h-8 w-8 mb-2" />
+                                  <span className="text-sm font-medium">
+                                    {media.type === "VIDEO"
+                                      ? "Vídeo"
+                                      : "Arquivo"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4">
+                              <h5 className="font-medium text-purple-900 truncate mb-1">
+                                {media.title || "Arquivo sem título"}
+                              </h5>
+                              <p className="text-sm text-purple-600 truncate">
+                                {uploadErrors[index] ? (
+                                  <span className="text-red-600">{uploadErrors[index]}</span>
+                                ) : (
+                                  media.path
+                                )}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeMedia(index)}
+                              className="absolute top-2 right-2 w-8 h-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              disabled={media.isUploading}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -696,13 +716,18 @@ export default function CreateNewsForm() {
               </Button>
               <Button
                 type="submit"
-                disabled={isFormSubmitting}
-                className="h-12 px-10 rounded-xl bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold shadow-lg transition-all duration-200 transform hover:scale-105"
+                disabled={isFormSubmitting || hasUploadsPending}
+                className="h-12 px-10 rounded-xl bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isFormSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                     Enviando...
+                  </>
+                ) : hasUploadsPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Aguardando uploads...
                   </>
                 ) : (
                   <>

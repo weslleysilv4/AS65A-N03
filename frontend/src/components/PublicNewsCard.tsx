@@ -2,10 +2,10 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/utils/format";
+import { formatDate, getFirstImageUrl } from "@/utils/format";
 import { Eye, Calendar, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import OptimizedImage from "@/components/OptimizedImage";
 import type { NewsItem } from "@/types/api";
 
 interface PublicNewsCardProps {
@@ -17,6 +17,8 @@ export default function PublicNewsCard({
   news,
   featured = false,
 }: PublicNewsCardProps) {
+  const imageUrl = getFirstImageUrl(news.media);
+
   const getRandomGradient = () => {
     const gradients = [
       "bg-gradient-to-br from-blue-500 to-purple-600",
@@ -39,12 +41,13 @@ export default function PublicNewsCard({
             <div
               className={`h-80 ${getRandomGradient()} relative overflow-hidden`}
             >
-              {news.imageUrl ? (
-                <Image
-                  src={news.imageUrl}
+              {imageUrl ? (
+                <OptimizedImage
+                  src={imageUrl}
                   alt={news.title}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  fallbackText={news.title.charAt(0).toUpperCase()}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center relative">
@@ -137,12 +140,13 @@ export default function PublicNewsCard({
           <div
             className={`h-48 ${getRandomGradient()} relative overflow-hidden rounded-t-xl`}
           >
-            {news.imageUrl ? (
-              <Image
-                src={news.imageUrl}
+            {imageUrl ? (
+              <OptimizedImage
+                src={imageUrl}
                 alt={news.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
+                fallbackText={news.title.charAt(0).toUpperCase()}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

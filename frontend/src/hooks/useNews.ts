@@ -101,7 +101,9 @@ export const useCreatePendingChange = () => {
   return useMutation({
     mutationFn: createPendingChange,
     onSuccess: () => {
+      // Invalidar consultas relacionadas a mudanças pendentes
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.pending() });
+      queryClient.invalidateQueries({ queryKey: [...NEWS_QUERY_KEYS.pending(), "admin"] });
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
       toast.success("Solicitação de mudança criada com sucesso!");
     },
@@ -153,7 +155,11 @@ export const useUpdateAdminNews = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<NewsItem> }) =>
       updateAdminNews(id, data),
     onSuccess: () => {
+      // Invalidar todas as consultas relacionadas
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.admin() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.public() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.details() });
       toast.success("Notícia atualizada com sucesso!");
     },
     onError: (error) => {
@@ -169,8 +175,11 @@ export const useDeleteNews = () => {
   return useMutation({
     mutationFn: (id: string) => deleteNews(id),
     onSuccess: () => {
+      // Invalidar todas as consultas relacionadas
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.admin() });
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.public() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.details() });
       toast.success("Notícia excluída com sucesso!");
     },
     onError: (error) => {
@@ -186,8 +195,11 @@ export const useArchiveNews = () => {
   return useMutation({
     mutationFn: (id: string) => archiveNews(id),
     onSuccess: () => {
+      // Invalidar todas as consultas relacionadas
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.admin() });
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.public() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.details() });
       toast.success("Notícia arquivada com sucesso!");
     },
     onError: (error) => {
@@ -204,8 +216,14 @@ export const useApproveChange = () => {
     mutationFn: ({ id, data }: { id: string; data: ApproveChangeRequest }) =>
       approveChange(id, data),
     onSuccess: () => {
+      // Invalidar todas as consultas relacionadas a notícias
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.pending() });
+      queryClient.invalidateQueries({ queryKey: [...NEWS_QUERY_KEYS.pending(), "admin"] });
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.admin() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.public() });
+      // Invalidar também as queries de detalhes
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.details() });
       toast.success("Mudança aprovada com sucesso!");
     },
     onError: (error) => {
@@ -222,8 +240,11 @@ export const useRejectChange = () => {
     mutationFn: ({ id, data }: { id: string; data: ApproveChangeRequest }) =>
       rejectChange(id, data),
     onSuccess: () => {
+      // Invalidar todas as consultas relacionadas a notícias pendentes
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.pending() });
+      queryClient.invalidateQueries({ queryKey: [...NEWS_QUERY_KEYS.pending(), "admin"] });
       queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.admin() });
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.publisher() });
       toast.success("Mudança rejeitada com sucesso!");
     },
     onError: (error) => {

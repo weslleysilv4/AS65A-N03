@@ -6,6 +6,7 @@ import {
   deleteCategory,
 } from "@/services/api";
 import type { NewsCategory, UpdateCategoryRequest } from "@/types/api";
+import { NEWS_QUERY_KEYS } from "./useNews";
 
 export const CATEGORY_QUERY_KEYS = {
   all: ["categories"] as const,
@@ -31,6 +32,8 @@ export const useCreateCategory = () => {
     mutationFn: createCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEYS.all });
+      // Invalidar também as consultas de notícias que podem usar filtros de categoria
+      queryClient.invalidateQueries({ queryKey: NEWS_QUERY_KEYS.public() });
     },
     onError: (error) => {
       console.error("Erro ao criar categoria:", error);

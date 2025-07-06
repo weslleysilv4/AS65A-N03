@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import CategorySelector from "@/components/ui/CategorySelector";
+import OptimizedImage from "@/components/OptimizedImage";
+
 import {
   ArrowLeft,
   Save,
@@ -19,6 +21,7 @@ import {
   X,
   Sparkles,
   FileText,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { UpdateChangeRequest } from "@/types/api";
 
@@ -398,6 +401,75 @@ export default function EditNewsForm({ newsId }: EditNewsFormProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Media Preview Section */}
+              {newsItem && newsItem.media && newsItem.media.length > 0 && (
+                <Card className="border-0 shadow-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-purple-600" />
+                      Mídia Associada
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {newsItem.media.map((media, index) => (
+                        <div
+                          key={media.id || index}
+                          className="bg-white/80 rounded-xl border border-purple-200 overflow-hidden shadow-sm"
+                        >
+                          {media.type === "IMAGE" && (
+                            <div className="aspect-video relative">
+                              <OptimizedImage
+                                src={media.url}
+                                alt={
+                                  media.alt ||
+                                  media.title ||
+                                  "Imagem da notícia"
+                                }
+                                fill
+                                className="object-cover"
+                                fallbackText="🖼️"
+                              />
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                                {media.type === "IMAGE" && "Imagem"}
+                                {media.type === "VIDEO" && "Vídeo"}
+                                {media.type === "EXTERNAL_LINK" && "Link"}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                #{media.order || index + 1}
+                              </span>
+                            </div>
+                            {media.title && (
+                              <h4 className="font-medium text-sm text-gray-900 mb-1 line-clamp-1">
+                                {media.title}
+                              </h4>
+                            )}
+                            {media.description && (
+                              <p className="text-xs text-gray-600 line-clamp-2">
+                                {media.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      <p className="text-sm text-blue-700 flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        <span>
+                          Para editar a mídia associada, entre em contato com o
+                          administrador.
+                        </span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Form Actions */}
               <div className="flex justify-end gap-4 pt-8 border-t border-gray-200">

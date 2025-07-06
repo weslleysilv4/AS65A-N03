@@ -1,4 +1,4 @@
-import Image from "next/image";
+import OptimizedImage from "@/components/OptimizedImage";
 import { Calendar, Clock } from "lucide-react";
 
 interface NewsCardProps {
@@ -91,12 +91,13 @@ export default function NewsCard({
 
         {imageUrl && (
           <div className="w-40 h-40 flex-shrink-0 rounded-lg overflow-hidden">
-            <Image
+            <OptimizedImage
               src={imageUrl}
               alt={title}
               width={160}
               height={160}
               className="w-full h-full object-cover"
+              fallbackText="📰"
             />
           </div>
         )}

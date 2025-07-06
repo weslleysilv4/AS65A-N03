@@ -1,5 +1,5 @@
-import * as publisherService from './publisher.service';
-import { RequestHandler } from 'express';
+import * as publisherService from "./publisher.service";
+import { RequestHandler } from "express";
 
 /**
  * Handles the request to get all published news for a specific author.
@@ -26,7 +26,7 @@ export const getPublishedNewsHandler: RequestHandler = async (
   try {
     const news = await publisherService.getPublishedNews(user.id);
     res.status(200).json({
-      message: 'Notícias publicadas',
+      message: "Notícias publicadas",
       data: news,
     });
   } catch (error) {
@@ -59,7 +59,7 @@ export const getPendingChangesHandler: RequestHandler = async (
   try {
     const pendingChanges = await publisherService.getPendingChanges(user.id);
     res.status(200).json({
-      message: 'Notícias pendentes',
+      message: "Notícias pendentes",
       data: pendingChanges,
     });
   } catch (error) {
@@ -91,17 +91,17 @@ export const requestNewsCreationHandler: RequestHandler = async (
   next
 ) => {
   const user = req.user;
-  const newsData = req.body;
+  const { content } = req.body;
 
   try {
     const newsRequest = await publisherService.requestNewsCreation(
       user.id,
-      newsData
+      content
     );
 
     res.status(201).json({
       message:
-        'Pedido de criação enviado com sucesso, aguarde a aprovação do administrador',
+        "Pedido de criação enviado com sucesso, aguarde a aprovação do administrador",
       data: newsRequest,
     });
   } catch (error: any) {
@@ -134,18 +134,18 @@ export const requestNewsUpdateHandler: RequestHandler = async (
   next
 ) => {
   const user = req.user;
-  const newsData = req.body;
+  const { content } = req.body;
   const { id: newsId } = req.params;
   try {
     const newsRequest = await publisherService.requestNewsUpdate(
       user.id,
       newsId,
-      newsData
+      content
     );
 
     res.status(201).json({
       message:
-        'Pedido de atualização enviado com sucesso, aguarde a aprovação do administrador',
+        "Pedido de atualização enviado com sucesso, aguarde a aprovação do administrador",
       newsRequest,
     });
   } catch (error: any) {

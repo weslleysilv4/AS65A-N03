@@ -2,6 +2,20 @@
  * Date and formatting utilities
  */
 
+import type { MediaItem } from "@/types/api";
+
+/**
+ * Get the first image URL from media array
+ * @param media - Array of media items
+ * @returns First image URL or undefined
+ */
+export const getFirstImageUrl = (media?: MediaItem[]): string | undefined => {
+  if (!media || media.length === 0) return undefined;
+
+  const firstImage = media.find((item) => item.type === "IMAGE");
+  return firstImage?.url;
+};
+
 /**
  * Format date to localized string
  * @param date - Date string or Date object
