@@ -1,0 +1,12 @@
+{
+	"notFound": {
+		"pendingChanges": "4041",
+		"news": "4042"
+	},
+	"auth": {
+		"emailAlreadyExists": "4011",
+		"invalidCredentials": "4012",
+		"logoutFailed": "4013"
+	},
+	"internal": "5001"
+}
